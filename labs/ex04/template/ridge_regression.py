@@ -9,8 +9,9 @@ import numpy as np
 
 def ridge_regression(y, tx, lambda_):
     """implement ridge regression."""
-    # ***************************************************
-    # INSERT YOUR CODE HERE
-    # ridge regression: TODO
-    # ***************************************************
-    raise NotImplementedError
+    txtxt = tx.T.dot(tx)
+    lambda_identity = (2*len(y)*lambda_)*np.identity(len(txtxt))
+    first = txtxt + lambda_identity
+    firstinv = np.linalg.inv(first)
+    firstinvdottxt = firstinv.dot(tx.T)
+    return firstinvdottxt.dot(y)
