@@ -39,7 +39,7 @@ def gradient_descent(y, tx, initial_w, max_iters, gamma, compute_loss = compute_
         ws.append(w)
         losses.append(loss)
 
-        print("Gradient Descent({bi}/{ti}): loss={l}".format(bi=n_iter, ti=max_iters - 1, l=loss))
+        #print("Gradient Descent({bi}/{ti}): loss={l}".format(bi=n_iter, ti=max_iters - 1, l=loss))
 
     return losses, ws
 
