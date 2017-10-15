@@ -7,17 +7,14 @@ import numpy as np
 yb, input_data, ids = helpers.load_csv_data("../data/train.csv", True)
 
 
-
-def event_mask(ev):
-	"""integer value representing the category of the event"""
-	return sum((v != -999) << j for j, v in enumerate(ev))
-
 def bucket_events(data):
-	"""buckets events by category: returns a list containing list of indexes for each category"""
-	d = defaultdict(list)
-	for i, ev in enumerate(data):
-		d[event_mask(ev)].append(i)
-	return d.values()
+	return [(np.where(input_data[:, 22] == i)) for i in range(0, 4)]
 
 
-print(len(bucket_events(input_data)))
+print("loaded")
+
+# test
+indexes = bucket_events(input_data)[0]
+
+y = yb[indexes]
+x = input_data[indexes][:, 1]
