@@ -16,4 +16,7 @@ def split_data(x, y, ratio, seed=1):
     # INSERT YOUR CODE HERE
     # split the data based on the given ratio: TODO
     # ***************************************************
-    raise NotImplementedError
+    xy = np.dstack((x, y))[0]
+    np.random.shuffle(xy)
+    i = round(len(x)*ratio)
+    return xy[:i].T, xy[i:].T #training then testing
