@@ -36,17 +36,22 @@ def bucket_events_by_undefs(data):
 
 
 def remove_undef(data):
+    data = np.copy(data)
     mean = data[data != -999].mean()
     data[np.where(data == -999)] = mean
     return data
 
 
-def prepare_data(data):
+def prepare_data(y, data):
     """transforms mass and filters columns"""
-    cols = np.array([remove_undef(c) for c in np.copy(data.T)])
+    cols = np.array([remove_undef(c) for c in data.T])
+    pos_cols = [c for c in cols if c.min() > 0]
+    nez_cols = [c for c in cols if 0 not in c]
+
+    matrix = np.c_[cols.T, np.log(pos_cols).T, np.reciprocal(nez_cols).T]
     return np.c_[np.ones(len(data)), 
                  np.where(data[:, 0] < 0, -1, 1), # mass bool
-                 standardize_matrix(cols.T)]
+                 standardize_matrix(matrix)]
 
 
 
@@ -70,7 +75,7 @@ if __name__ == "__main__":
     
     yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", True)
 
-    data = prepare_data(raw_data)
+    data = prepare_data(yb, raw_data)
     print(data.shape)
 
     pri_buckets = bucket_events(raw_data)
