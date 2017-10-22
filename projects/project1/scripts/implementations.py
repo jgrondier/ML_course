@@ -26,10 +26,14 @@ def compute_loss_MAE(y, tx, w):
     e = np.abs(y - tx.dot(w))
     return e.sum() / len(y)
 
+def compute_loss_logistic_MSE(y, tx, w):
+    logist = 1.0 / (1.0 - np.exp(-tx.dot(w)))
+    e = (y - (logist * 2.0 - 1.0))
+    return e.dot(e) / len(y)
+
 def compute_gradient(y, tx, w):
     """Compute the gradient."""
     return tx.T.dot(y - tx.dot(w)) / -len(y)
-
 
 def gradient_descent(y, tx, initial_w, max_iters, gamma, compute_loss = compute_loss_MSE):
     """Gradient descent algorithm."""
