@@ -47,6 +47,7 @@ def prepare_data(data):
     cols = np.array([remove_undef(c) for c in data.T])
     pos_cols = [c for c in cols if c.min() > 0]
     nez_cols = [c for c in cols if 0 not in c]
+    #boolified = np.array([np.where(c < 0, -1, 1) for c in cols])
 
     matrix = np.c_[cols.T, np.log(pos_cols).T, np.reciprocal(nez_cols).T]
     return np.c_[np.ones(len(data)), 
@@ -61,11 +62,8 @@ def linreg(y, tx):
     assert(len(y) == len(tx))
     assert(len(y) > 0)
 
-    success = 0
-
     losses, ws = gradient_descent(y, tx, np.zeros(tx.shape[1]), 5000, 0.01)
     min_loss = min(losses)
-
     return next(w for l, w in zip(losses, ws) if l == min_loss)
 
 
@@ -79,7 +77,7 @@ if __name__ == "__main__":
     print(data.shape)
 
     pri_buckets = bucket_events(raw_data)
-    pri_jet_w = [linreg(yb[b], data[b]) for b in pri_buckets]
+    pri_jet_w = [least_squares(yb[b], data[b])[1] for b in pri_buckets]
 
     success = 0
     for i, ev in tqdm(enumerate(data)):
