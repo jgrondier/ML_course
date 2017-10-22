@@ -1,6 +1,11 @@
 
 import numpy as np
 
+try: from tqdm import tqdm
+except: tqdm = lambda x: x
+
+
+
 def standardize(x):
     """Standardize the original data set."""
     mean_x = np.mean(x)
@@ -32,7 +37,7 @@ def gradient_descent(y, tx, initial_w, max_iters, gamma, compute_loss = compute_
     ws = [initial_w]
     losses = []
     w = initial_w
-    for n_iter in range(max_iters):
+    for n_iter in tqdm(range(max_iters)):
         gradient = compute_gradient(y, tx, w)
         loss = compute_loss(y, tx, w)
         w = w - gamma * gradient

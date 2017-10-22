@@ -3,19 +3,23 @@ from implementations import *
 import proj1_helpers as helpers
 import numpy as np
 
+
 def uniq(t):
 	vals = set()
 	for x in t:
 		vals.add(x)
 	return len(vals)
 
+
 def standardize_matrix(data):
 	cols = np.array([standardize(c) if uniq(c) > 8 else c for c in data.T])
 	return cols.T
 
+
 def bucket_events(data):
 	"""bucket events by PRI_jet_num"""
 	return [np.where(data[:, 22] == i)[0] for i in range(0, 4)]	
+
 
 
 def bucket_events_by_undefs(data):
@@ -29,10 +33,12 @@ def bucket_events_by_undefs(data):
 		d[event_mask(ev)].append(i)
 	return list(d.values())
 
+
 def remove_undef(data):
 	mean = data[data != -999].mean()
 	data[np.where(data == -999)] = mean
 	return data
+
 
 def prepare_data(data):
 	"""transforms mass and filters columns"""
@@ -59,14 +65,6 @@ def linreg(y, tx):
 
 
 
-def find_index(i, indexes):
-	assert(isinstance(indexes, list))
-	for a, b in enumerate(indexes):
-		if i in b:
-			return a
-	raise Exception()
-
-
 if __name__ == "__main__":
     
     yb, raw_data, ids = helpers.load_csv_data("../data/train.csv", True)
@@ -74,30 +72,20 @@ if __name__ == "__main__":
     data = prepare_data(raw_data)
     print(data.shape)
 
-    global_w = linreg(yb, data)
+    #global_w = linreg(yb, data)
 
     pri_buckets = bucket_events(raw_data)
-    undef_buckets = bucket_events_by_undefs(raw_data)
+    #undef_buckets = bucket_events_by_undefs(raw_data)
 
     pri_jet_w = [linreg(yb[b], data[b]) for b in pri_buckets]
-    undef_w = [linreg(yb[b], data[b]) for b in undef_buckets]
+    #undef_w = [linreg(yb[b], data[b]) for b in undef_buckets]
 
     success = 0
-    for i, ev in enumerate(data):
-    	pri_jet = find_index(i, pri_buckets)
-    	undef = find_index(i, undef_buckets)
+    for i, ev in tqdm(enumerate(data)):
+    	p_w = pri_jet_w[int(raw_data[i][22])];
 
-    	assert(i in pri_buckets[pri_jet])
-    	assert(i in undef_buckets[undef])
-
-    	p_w = pri_jet_w[pri_jet]
-    	u_w = undef_w[undef]
-
-    	ws = [p_w, u_w, global_w] 
-    	xs = [w.dot(ev) for w in ws]
-    	xs = [-1 if x < 0 else 1 for x in xs]
-
-    	prediction = -1 if np.sum(xs) < 0 else 1
+    	x = p_w.dot(ev)
+    	prediction = -1 if x < 0 else 1
 
     	success += int(prediction) == int(yb[i])
     	
