@@ -67,29 +67,25 @@ def linreg(y, tx):
 
 if __name__ == "__main__":
     
-    yb, raw_data, ids = helpers.load_csv_data("../data/train.csv", True)
+    yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", True)
 
     data = prepare_data(raw_data)
     print(data.shape)
 
-    #global_w = linreg(yb, data)
-
     pri_buckets = bucket_events(raw_data)
-    #undef_buckets = bucket_events_by_undefs(raw_data)
-
     pri_jet_w = [linreg(yb[b], data[b]) for b in pri_buckets]
-    #undef_w = [linreg(yb[b], data[b]) for b in undef_buckets]
 
-    success = 0
-    for i, ev in tqdm(enumerate(data)):
-    	p_w = pri_jet_w[int(raw_data[i][22])];
+    
+    _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", True)
+    test_data = prepare_data(raw_test_data)
+
+    preds = np.ones(len(test_data))
+    for i, ev in tqdm(enumerate(test_data)):
+    	p_w = pri_jet_w[int(raw_test_data[i][22])];
 
     	x = p_w.dot(ev)
-    	prediction = -1 if x < 0 else 1
+    	preds[i] = -1 if x < 0 else 1
 
-    	success += int(prediction) == int(yb[i])
-    	
-
-    print("\ntotal average =", (success / len(yb) * 100))
+    helpers.create_csv_submission(ids, preds, "results.csv")
 
 
