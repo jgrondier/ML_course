@@ -4,9 +4,6 @@ import proj1_helpers as helpers
 import numpy as np
 
 
-yb, input_data, ids = helpers.load_csv_data("../data/small.csv", True)
-
-
 def bucket_events(data):
 	"""bucket events by PRI_jet_num"""
 	return [(np.where(data[:, 22] == i)) for i in range(0, 4)]	
@@ -40,24 +37,26 @@ def linreg(y, tx):
 	return best_w, success
 
 
+if __name__ == "__main__":
+    
+    yb, input_data, ids = helpers.load_csv_data("../data/small.csv", True)
 
+    no_mass = input_data[:, 0] == -999
+    no_mass_y = yb[no_mass]
+    no_mass_data = input_data[no_mass]
 
-no_mass = input_data[:, 0] == -999
-no_mass_y = yb[no_mass]
-no_mass_data = input_data[no_mass]
+    print("Without mass:")
+    _, success = linreg(no_mass_y, no_mass_data)
 
-print("Without mass:")
-_, success = linreg(no_mass_y, no_mass_data)
+    with_mass = input_data[:, 0] != -999
+    mass_y = yb[with_mass]
+    mass_data = input_data[with_mass]
 
-with_mass = input_data[:, 0] != -999
-mass_y = yb[with_mass]
-mass_data = input_data[with_mass]
+    for i, b in enumerate(bucket_events(mass_data)):
+        print("Group", ["a:", "b:", "c:", "d:"][i])
+        _, s = linreg(mass_y[b], mass_data[b])
+        success += s
 
-for i, b in enumerate(bucket_events(mass_data)):
-	print("Group", ["a:", "b:", "c:", "d:"][i])
-	_, s = linreg(mass_y[b], mass_data[b])
-	success += s
-
-print("\ntotal =", (success / len(yb) * 100))
+    print("\ntotal =", (success / len(yb) * 100))
 
 
