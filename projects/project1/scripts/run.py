@@ -86,7 +86,7 @@ if __name__ == "__main__":
     preds = np.ones(len(test_data))
     for i, ev in tqdm(enumerate(test_data)):
         pri = int(raw_test_data[i][22])
-        x = pri_jet_w[pri];.dot(ev)
+        x = pri_w[pri].dot(ev)
         preds[i] = -1 if x < 0 else 1
 
     helpers.create_csv_submission(ids, preds, "results.csv")"""
