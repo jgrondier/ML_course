@@ -42,7 +42,7 @@ def remove_undef(data):
     return data
 
 
-def prepare_data(y, data):
+def prepare_data(data):
     """transforms mass and filters columns"""
     cols = np.array([remove_undef(c) for c in data.T])
     pos_cols = [c for c in cols if c.min() > 0]
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     
     yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", True)
 
-    data = prepare_data(yb, raw_data)
+    data = prepare_data(raw_data)
     print(data.shape)
 
     pri_buckets = bucket_events(raw_data)
