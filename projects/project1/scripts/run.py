@@ -3,11 +3,31 @@ from implementations import *
 import proj1_helpers as helpers
 import numpy as np
 
+def uniq(t):
+	vals = set()
+	for x in t:
+		vals.add(x)
+	return len(vals)
+
+def standardize_matrix(data):
+	cols = np.array([standardize(c) if uniq(c) > 8 else c for c in data.T])
+	return cols.T
 
 def bucket_events(data):
 	"""bucket events by PRI_jet_num"""
-	return [(np.where(data[:, 24] == i)) for i in range(0, 4)]	
+	return [np.where(data[:, 22] == i)[0] for i in range(0, 4)]	
 
+
+def bucket_events_by_undefs(data):
+	"""buckets events by category: returns a list containing list of indexes for each category"""
+	def event_mask(ev):
+		"""integer value representing the category of the event"""
+		return sum((v != -999) << j for j, v in enumerate(ev))
+
+	d = defaultdict(list)
+	for i, ev in enumerate(data):
+		d[event_mask(ev)].append(i)
+	return list(d.values())
 
 def remove_undef(data):
 	mean = data[data != -999].mean()
@@ -16,10 +36,11 @@ def remove_undef(data):
 
 def prepare_data(data):
 	"""transforms mass and filters columns"""
-	cols = np.array([remove_undef(c) for c in data.T])
+	cols = np.array([remove_undef(c) for c in np.copy(data.T)])
 	return np.c_[np.ones(len(data)), 
 				 np.where(data[:, 0] < 0, -1, 1), # mass bool
-				 cols.T]
+				 standardize_matrix(cols.T)]
+
 
 
 
@@ -30,38 +51,56 @@ def linreg(y, tx):
 
 	success = 0
 
-	tx = standardize(tx)
-
-	losses, ws = gradient_descent(y, tx, np.zeros(tx.shape[1]), 5000, 0.005)
+	losses, ws = gradient_descent(y, tx, np.zeros(tx.shape[1]), 5000, 0.01)
 	min_loss = min(losses)
 
 	return next(w for l, w in zip(losses, ws) if l == min_loss)
 
 
 
-def bench(w, y, tx):
-	success = 0
-	for r, ev in zip(y, standardize(tx)):
-		#predictions = [-1 if we.dot(ev) < 0 else 1 for we in w]
-		#prediction = -1 if np.sum(predictions) < 0 else 1
-		prediction = -1 if w.dot(ev) < 0 else 1
-		success += 1 if prediction == int(r) else 0
 
-	print("  success rate =", (success / float(len(y)) * 100), "\n")
-	return success
-
+def find_index(i, indexes):
+	assert(isinstance(indexes, list))
+	for a, b in enumerate(indexes):
+		if i in b:
+			return a
+	raise Exception()
 
 
 if __name__ == "__main__":
     
-    yb, input_data, ids = helpers.load_csv_data("../data/small.csv", True)
-    input_data = prepare_data(input_data)
+    yb, raw_data, ids = helpers.load_csv_data("../data/train.csv", True)
+
+    data = prepare_data(raw_data)
+    print(data.shape)
+
+    global_w = linreg(yb, data)
+
+    pri_buckets = bucket_events(raw_data)
+    undef_buckets = bucket_events_by_undefs(raw_data)
+
+    pri_jet_w = [linreg(yb[b], data[b]) for b in pri_buckets]
+    undef_w = [linreg(yb[b], data[b]) for b in undef_buckets]
 
     success = 0
-    for i, b in enumerate(bucket_events(input_data)):
-        print("Group", ["a:", "b:", "c:", "d:"][i], "(" + str(len(b[0])), "items)")
-        group_w = linreg(yb[b], input_data[b])
-        success += bench(group_w, yb[b], input_data[b])
+    for i, ev in enumerate(data):
+    	pri_jet = find_index(i, pri_buckets)
+    	undef = find_index(i, undef_buckets)
+
+    	assert(i in pri_buckets[pri_jet])
+    	assert(i in undef_buckets[undef])
+
+    	p_w = pri_jet_w[pri_jet]
+    	u_w = undef_w[undef]
+
+    	ws = [p_w, u_w, global_w] 
+    	xs = [w.dot(ev) for w in ws]
+    	xs = [-1 if x < 0 else 1 for x in xs]
+
+    	prediction = -1 if np.sum(xs) < 0 else 1
+
+    	success += int(prediction) == int(yb[i])
+    	
 
     print("\ntotal average =", (success / len(yb) * 100))
 

@@ -6,6 +6,8 @@ def standardize(x):
     mean_x = np.mean(x)
     x = x - mean_x
     std_x = np.std(x)
+    if std_x == 0:
+        return np.zeros(len(x))
     x = x / std_x
     return x
 
