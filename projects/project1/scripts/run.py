@@ -37,7 +37,7 @@ def analyse_data(data):
     nez_cols = [i for i, c in enumerate(cols) if 0 not in c]
     return (pos_cols, nez_cols)
 
-def prepare_data(data, analysed, degree = 7):
+def prepare_data(data, analysed, degree):
     """transforms mass and add derivated features"""
     cols = columns(data)
     polys = [np.array([np.power(c, deg) for c in cols]).T for deg in range(2, degree + 1)]
@@ -82,6 +82,16 @@ def compute_ridge_rmse(yb, raw_data, lambda_, degree):
 
     return [np.sum(r) for r in rmse]
 
+def train_ridge_rmse(yb, raw_data, lambda_, degree):
+    analysed = analyse_data(raw_data)
+
+    train_x = prepare_data(raw_data, analysed, degree)
+
+    pri_train_buckets = bucket_events(raw_data)
+    pri_w = [ridge_regression(yb[b], train_x[b], lambda_) for b in pri_train_buckets]
+             
+    return pri_w
+
 
 def grid_search(y, raw_x):
     degrees = range(1, 9)
@@ -95,12 +105,11 @@ def grid_search(y, raw_x):
     return sorted(testing_errors, key=testing_errors.get)
 
 if __name__ == "__main__":
+    #lambda = 0.017, degree = 6
     
     yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
 
-    print(compute_ridge_rmse(yb, raw_data, 0.0001, 8))
-
-    #compute_rmse(yb, raw_data, 0.001, 7)
+    #print(np.mean(compute_ridge_rmse(yb, raw_data, 0.017, 6)))
     
     """ success = 0
         total = 0
@@ -113,16 +122,18 @@ if __name__ == "__main__":
         print("\ntotal average =", (success / len(test_x) * 100))"""
 
 
-    
-    """_, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", True)
-    test_data = prepare_data(raw_test_data)
+    """
+    _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
+    test_data = prepare_data(raw_test_data, analyse_data(raw_data), 6)
 
+    pri_w = train_ridge_rmse(yb, raw_data, 0.017, 6)
+             
     preds = np.ones(len(test_data))
     for i, ev in tqdm(enumerate(test_data)):
         pri = int(raw_test_data[i][22])
         x = pri_w[pri].dot(ev)
         preds[i] = -1 if x < 0 else 1
 
-    helpers.create_csv_submission(ids, preds, "results.csv")"""
+    helpers.create_csv_submission(ids, preds, "results.csv")#"""
 
 
