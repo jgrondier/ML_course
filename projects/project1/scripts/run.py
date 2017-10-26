@@ -83,6 +83,16 @@ def compute_ridge_rmse(yb, raw_data, lambda_, degree):
     return [np.sum(r) for r in rmse]
 
 
+def grid_search(y, raw_x):
+    degrees = range(1, 9)
+    lambdas = np.logspace(-4, 0, 30)
+    testing_errors = {}
+    for lambda_ in tqdm(lambdas):
+        for degree in degrees:
+            errors = np.array(compute_ridge_rmse(y, raw_x, lambda_, degree))
+            testing_errors[(lambda_, degree)] = np.mean(errors)
+            
+    return sorted(testing_errors, key=testing_errors.get)
 
 if __name__ == "__main__":
     
