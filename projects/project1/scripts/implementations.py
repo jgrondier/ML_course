@@ -21,7 +21,7 @@ def standardize(x):
 def compute_loss_MSE(y, tx, w):
     """Calculate the loss"""
     e = (y - tx.dot(w))
-    return e.dot(e) / len(y)
+    return e.T.dot(e) / len(y)
 
 def compute_loss_MAE(y, tx, w):
     """Calculate the loss"""
