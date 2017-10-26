@@ -5,15 +5,16 @@ import proj1_helpers as helpers
 import numpy as np
 import gc
 
+
+def uniq_count(t):
+    vals = set()
+    for x in t:
+        vals.add(x)
+    return len(vals)
+
 def standardize_matrix(data):
     """standardize matrix column by column"""
-    def uniq_count(t):
-        vals = set()
-        for x in t:
-            vals.add(x)
-        return len(vals)
-
-    return np.array([standardize(c) if uniq_count(c) > 8 else c for c in data.T]).T
+    return np.array([standardize(c) for c in data.T]).T
 
 
 def bucket_events(data):
@@ -28,7 +29,7 @@ def remove_undef(data):
     return data
 
 def columns(data):
-    return np.array([remove_undef(c) for i, c in enumerate(data.T) if i not in [14, 15, 17, 18, 24, 25, 27, 28]])
+    return np.array([remove_undef(c) for i, c in enumerate(data.T) if i not in [14, 15, 17, 18, 22, 24, 25, 27, 28]])
 
 def analyse_data(data):
     cols = columns(data)
@@ -76,7 +77,7 @@ def compute_ridge_rmse(yb, raw_data, lambda_, degree):
         pri_test_buckets = bucket_events(raw_test_x)
 
         for i, b in enumerate(pri_test_buckets):
-            rmse_te = float(np.sqrt(compute_loss_MSE(test_y[b], test_x[b], pri_w[i])))
+            rmse_te = np.sqrt(compute_loss_MSE(test_y[b], test_x[b], pri_w[i]))
             rmse[i].append(rmse_te)
 
     return [np.sum(r) for r in rmse]
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     
     yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
 
-    print(compute_ridge_rmse(yb, raw_data, 0.001, 5))
+    print(compute_ridge_rmse(yb, raw_data, 0.0001, 8))
 
     #compute_rmse(yb, raw_data, 0.001, 7)
     
