@@ -5,15 +5,16 @@ import proj1_helpers as helpers
 import numpy as np
 import gc
 
+
+def uniq_count(t):
+    vals = set()
+    for x in t:
+        vals.add(x)
+    return len(vals)
+
 def standardize_matrix(data):
     """standardize matrix column by column"""
-    def uniq_count(t):
-        vals = set()
-        for x in t:
-            vals.add(x)
-        return len(vals)
-
-    return np.array([standardize(c) if uniq_count(c) > 8 else c for c in data.T]).T
+    return np.array([standardize(c) for c in data.T]).T
 
 
 def bucket_events(data):
@@ -28,7 +29,7 @@ def remove_undef(data):
     return data
 
 def columns(data):
-    return np.array([remove_undef(c) for i, c in enumerate(data.T) if i not in [14, 15, 17, 18, 24, 25, 27, 28]])
+    return np.array([remove_undef(c) for i, c in enumerate(data.T) if i not in [14, 15, 17, 18, 22, 24, 25, 27, 28]])
 
 def analyse_data(data):
     cols = columns(data)
@@ -36,7 +37,7 @@ def analyse_data(data):
     nez_cols = [i for i, c in enumerate(cols) if 0 not in c]
     return (pos_cols, nez_cols)
 
-def prepare_data(data, analysed, degree = 7):
+def prepare_data(data, analysed, degree):
     """transforms mass and add derivated features"""
     cols = columns(data)
     polys = [np.array([np.power(c, deg) for c in cols]).T for deg in range(2, degree + 1)]
@@ -76,20 +77,39 @@ def compute_ridge_rmse(yb, raw_data, lambda_, degree):
         pri_test_buckets = bucket_events(raw_test_x)
 
         for i, b in enumerate(pri_test_buckets):
-            rmse_te = float(np.sqrt(compute_loss_MSE(test_y[b], test_x[b], pri_w[i])))
+            rmse_te = np.sqrt(compute_loss_MSE(test_y[b], test_x[b], pri_w[i]))
             rmse[i].append(rmse_te)
 
     return [np.sum(r) for r in rmse]
 
+def train_ridge_rmse(yb, raw_data, lambda_, degree):
+    analysed = analyse_data(raw_data)
 
+    train_x = prepare_data(raw_data, analysed, degree)
+
+    pri_train_buckets = bucket_events(raw_data)
+    pri_w = [ridge_regression(yb[b], train_x[b], lambda_) for b in pri_train_buckets]
+             
+    return pri_w
+
+
+def grid_search(y, raw_x):
+    degrees = range(1, 9)
+    lambdas = np.logspace(-4, 0, 30)
+    testing_errors = {}
+    for lambda_ in tqdm(lambdas):
+        for degree in degrees:
+            errors = np.array(compute_ridge_rmse(y, raw_x, lambda_, degree))
+            testing_errors[(lambda_, degree)] = np.mean(errors)
+            
+    return sorted(testing_errors, key=testing_errors.get)
 
 if __name__ == "__main__":
+    #lambda = 0.017, degree = 6
     
     yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
 
-    print(compute_ridge_rmse(yb, raw_data, 0.001, 5))
-
-    #compute_rmse(yb, raw_data, 0.001, 7)
+    #print(np.mean(compute_ridge_rmse(yb, raw_data, 0.017, 6)))
     
     """ success = 0
         total = 0
@@ -102,16 +122,18 @@ if __name__ == "__main__":
         print("\ntotal average =", (success / len(test_x) * 100))"""
 
 
-    
-    """_, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", True)
-    test_data = prepare_data(raw_test_data)
+    """
+    _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
+    test_data = prepare_data(raw_test_data, analyse_data(raw_data), 6)
 
+    pri_w = train_ridge_rmse(yb, raw_data, 0.017, 6)
+             
     preds = np.ones(len(test_data))
     for i, ev in tqdm(enumerate(test_data)):
         pri = int(raw_test_data[i][22])
         x = pri_w[pri].dot(ev)
         preds[i] = -1 if x < 0 else 1
 
-    helpers.create_csv_submission(ids, preds, "results.csv")"""
+    helpers.create_csv_submission(ids, preds, "results.csv")#"""
 
 
