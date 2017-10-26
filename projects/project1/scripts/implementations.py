@@ -28,6 +28,13 @@ def compute_loss_MAE(y, tx, w):
     e = np.abs(y - tx.dot(w))
     return e.sum() / len(y)
 
+def calculate_loss(y, tx, w):
+    """compute the cost by negative log likelihood."""
+    loss = 0
+    for i in range(0 , len(y)):
+        loss += np.log( 1 + np.exp(tx[i].T.dot(w)) ) - y[i] * tx[i].T.dot(w)
+    return loss
+
 def compute_gradient(y, tx, w):
     """Compute the gradient."""
     return tx.T.dot(y - tx.dot(w)) / -len(y)
@@ -52,13 +59,29 @@ def gradient_descent(y, tx, initial_w, max_iters, gamma, compute_loss = compute_
     return losses, ws
 
 
-
 def least_squares(y, tx):
     """calculate the least squares solution."""
     # returns mse, and optimal weights
     # opt = np.linalg.inv(tx.T.dot(tx)).dot(tx.T).dot(y);
-    opt = np.linalg.lstsq(tx, y)[0]
+    opt = np.linalg.inv(np.dot(tx.T, tx))
+    opt = np.dot(opt, tx.T)
+    opt = np.dot(opt, y)
+
     return compute_loss_MSE(y, tx, opt), opt
+
+def least_squares_GD(y, tx, initial_w, max_iters, gamma):
+    
+    return gradiant_descent(y, tx, initial_w, max_iters, gamma, compute_loss = calculate_loss)
+    
+    
+def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
+    
+    batch_size = 10
+    new_y, new_tx = y.reshape(-1, batch_size), tx.reshape(-1, batch_size)
+    combined = list(zip(y, tx))
+    random.shuffle(combined)
+    new_y[:], new_tx[:] = zip(*combined)
+    return gradiant_descent(y, tx, initial_w, max_iters, gamma, compute_loss = calculate_loss)
 
 
 def build_poly(x, degree):
@@ -81,6 +104,36 @@ def ridge_regression(y, tx, lambda_):
     firstinv = np.linalg.inv(first)
     firstinvdottxt = firstinv.dot(tx.T)
     return firstinvdottxt.dot(y)
+
+def sigmoid(t):
+    """apply sigmoid function on t."""
+    
+    ex = np.exp(t)
+    
+    return ex / (ex + 1)
+
+def calculate_gradient(y, tx, w):
+    """compute the gradient of loss."""
+
+    return tx.T.dot(sigmoid(np.dot(tx,w)) - y)
+
+def logistic_regression(y, tx, w):
+    """return the loss, gradient, and hessian."""
+    return calculate_loss(y, tx, w), calculate_gradient(y, tx, w), calculate_hessian(y, tx, w)
+
+def calculate_hessian(y, tx, w):
+    """return the hessian of the loss function."""
+    S = np.identity(len(y))
+    
+    for i in range(len(y)):
+        xtw = tx[i].T.dot(w)
+        S[i, i] = sigmoid(xtw) * ( 1 - sigmoid(xtw))
+    
+    ret = tx.T.dot(S)
+    return ret.dot(tx)
+def logistic_regression(y, tx, w):
+    """return the loss, gradient, and hessian."""
+    return calculate_loss(y, tx, w), calculate_gradient(y, tx, w), calculate_hessian(y, tx, w)
 
 
 def build_k_indices(y, k_fold, seed):
