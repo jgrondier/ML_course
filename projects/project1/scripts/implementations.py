@@ -98,12 +98,12 @@ def build_k_indices(y, k_fold, seed):
 def cross_validation_datasets(y, tx, k_fold, seed = time()):
     k_indices = build_k_indices(y, k_fold, seed)
     """return the loss of ridge regression."""
-    for k in tqdm(range(k_fold)):
+    for k in range(k_fold):
         # ***************************************************
         # get k'th subgroup in test, others in train
         # ***************************************************
         test_y = y[k_indices[k]]
         test_x = tx[k_indices[k]]
         train_y = (y[k_indices[np.arange(len(k_indices))!=k]]).flatten()
-        train_x = (tx[k_indices[np.arange(len(k_indices))!=k]]).flatten()
+        train_x = (tx[k_indices[np.arange(len(k_indices))!=k]]).reshape(len(train_y), tx.shape[1])
         yield test_y, test_x, train_y, train_x
