@@ -79,3 +79,29 @@ def ridge_regression(y, tx, lambda_):
     firstinv = np.linalg.inv(first)
     firstinvdottxt = firstinv.dot(tx.T)
     return firstinvdottxt.dot(y)
+
+
+def build_k_indices(y, k_fold, seed):
+    """build k indices for k-fold."""
+    num_row = y.shape[0]
+    interval = int(num_row / k_fold)
+    np.random.seed(seed)
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval: (k + 1) * interval]
+                 for k in range(k_fold)]
+    return np.array(k_indices)
+
+
+    
+def cross_validation_datasets(y, tx, k_fold, seed = time()):
+    k_indices = build_k_indices(y, k_fold, seed)
+    """return the loss of ridge regression."""
+    for i in range(k):
+        # ***************************************************
+        # get k'th subgroup in test, others in train
+        # ***************************************************
+        test_y = y[k_indices[k]]
+        test_x = x[k_indices[k]]
+        train_y = (y[k_indices[np.arange(len(k_indices))!=k]]).flatten()
+        train_x = (x[k_indices[np.arange(len(k_indices))!=k]]).flatten()
+        yield test_y, test_x, train_y, train_x
