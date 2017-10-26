@@ -1,6 +1,8 @@
 
 import numpy as np
 
+from time import time
+
 try: from tqdm import tqdm
 except: tqdm = lambda x: x
 
@@ -85,7 +87,7 @@ def build_k_indices(y, k_fold, seed):
     """build k indices for k-fold."""
     num_row = y.shape[0]
     interval = int(num_row / k_fold)
-    np.random.seed(seed)
+    np.random.seed(int(seed))
     indices = np.random.permutation(num_row)
     k_indices = [indices[k * interval: (k + 1) * interval]
                  for k in range(k_fold)]
@@ -96,12 +98,12 @@ def build_k_indices(y, k_fold, seed):
 def cross_validation_datasets(y, tx, k_fold, seed = time()):
     k_indices = build_k_indices(y, k_fold, seed)
     """return the loss of ridge regression."""
-    for i in range(k):
+    for k in tqdm(range(k_fold)):
         # ***************************************************
         # get k'th subgroup in test, others in train
         # ***************************************************
         test_y = y[k_indices[k]]
-        test_x = x[k_indices[k]]
+        test_x = tx[k_indices[k]]
         train_y = (y[k_indices[np.arange(len(k_indices))!=k]]).flatten()
-        train_x = (x[k_indices[np.arange(len(k_indices))!=k]]).flatten()
+        train_x = (tx[k_indices[np.arange(len(k_indices))!=k]]).flatten()
         yield test_y, test_x, train_y, train_x
