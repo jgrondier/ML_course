@@ -93,22 +93,25 @@ def train_ridge_rmse(yb, raw_data, lambda_, degree):
     return pri_w
 
 
-def grid_search(y, raw_x):
-    degrees = range(1, 9)
-    lambdas = np.logspace(-4, 0, 30)
-    testing_errors = {}
-    for lambda_ in tqdm(lambdas):
-        for degree in degrees:
-            errors = np.array(compute_ridge_rmse(y, raw_x, lambda_, degree))
-            testing_errors[(lambda_, degree)] = np.mean(errors)
-            
-    return sorted(testing_errors, key=testing_errors.get)
+def grid_search(y, raw_x, filename = "grid_results.csv"):
+    with open(filename, 'w') as file:
+        file.write("lambda,degree,meanError\n")
+        degrees = range(1, 9)
+        lambdas = np.logspace(-4, 0, 30)
+        testing_errors = {}
+        for lambda_ in tqdm(lambdas):
+            for degree in degrees:
+                errors = np.array(compute_ridge_rmse(y, raw_x, lambda_, degree))
+                l = [lambda_, degree, np.mean(errors)]
+                file.write(",".join(str(x) for x in l))
+                file.write("\n")
 
 if __name__ == "__main__":
     #lambda = 0.017, degree = 6
     
     yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
 
+    #grid_search(yb, raw_data)
     #print(np.mean(compute_ridge_rmse(yb, raw_data, 0.017, 6)))
     
     """ success = 0
