@@ -30,9 +30,10 @@ def compute_loss_MAE(y, tx, w):
 
 def calculate_loss(y, tx, w):
     """compute the cost by negative log likelihood."""
-    loss = 0
+    loss = 0    
     for i in range(0 , len(y)):
-        loss += np.log( 1 + np.exp(tx[i].T.dot(w)) ) - y[i] * tx[i].T.dot(w)
+        loss += (np.log(1 + np.exp(np.dot(tx[i],w))) - y[i]*(np.dot(tx[i],w)))
+        
     return loss
 
 def compute_gradient(y, tx, w):
@@ -112,6 +113,7 @@ def sigmoid(t):
     
     return ex / (ex + 1)
 
+
 def calculate_gradient(y, tx, w):
     """compute the gradient of loss."""
 
@@ -131,10 +133,11 @@ def calculate_hessian(y, tx, w):
     
     ret = tx.T.dot(S)
     return ret.dot(tx)
+
+
 def logistic_regression(y, tx, w):
     """return the loss, gradient, and hessian."""
     return calculate_loss(y, tx, w), calculate_gradient(y, tx, w), calculate_hessian(y, tx, w)
-
 
 def build_k_indices(y, k_fold, seed):
     """build k indices for k-fold."""
@@ -147,6 +150,49 @@ def build_k_indices(y, k_fold, seed):
     return np.array(k_indices)
 
 
+    
+def penalized_logistic_regression(y, tx, w, lambda_):
+    """return the loss, gradient, and hessian."""
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # return loss, gradient, and hessian: TODO
+    # ***************************************************
+    
+    loss = calculate_loss(y, tx, w)
+    
+    loss += 0.5 * lambda_ * np.linalg.norm(w) ** 2
+    
+    g = calculate_gradient(y, tx, w)
+    
+    g += lambda_ * w
+    
+    hessian = calculate_hessian(y, tx, w)
+    
+    hessian +=  0.5 * lambda_ * np.linalg.norm(w) ** 2
+    
+    return loss, g, hessian
+
+def learning_by_penalized_gradient(y, tx, w, gamma, lambda_):
+    """
+    Do one step of gradient descent, using the penalized logistic regression.
+    Return the loss and updated w.
+    """
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # return loss, gradient: TODO
+    # ***************************************************
+    
+    loss, g, hessian = penalized_logistic_regression(y, tx, w, lambda_)
+    
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # update w: TODO
+    # ***************************************************
+    
+    w = w - gamma*g
+    
+    
+    return loss, w
     
 def cross_validation_datasets(y, tx, k_fold, seed = time()):
     k_indices = build_k_indices(y, k_fold, seed)
