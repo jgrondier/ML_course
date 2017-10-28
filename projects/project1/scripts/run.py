@@ -197,16 +197,23 @@ if __name__ == "__main__":
     y,x = y_train, train_data
     y = np.expand_dims(y, axis=1)
 
-    pri_train_buckets = bucket_events(raw_data)
-    pri_w = [train_logistic(y[b], x[b], gamma, lambda_, max_iter, threshold, compute_loss_MSE)[0] for b in pri_train_buckets]
+    #pri_train_buckets = bucket_events(raw_data)
+    #pri_w = [train_logistic(y[b], x[b], gamma, lambda_, max_iter, threshold, compute_loss_MSE)[0] for b in pri_train_buckets]
 
+    pri_w = train_logistic(y, x, gamma, lambda_, max_iter, threshold, calculate_loss)[0]
+    
     _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
     test_data = prepare_data(raw_test_data, analyse_data(raw_data), 6)
 
-    preds = np.ones(len(test_data))
+    """preds = np.ones(len(test_data))
     for i, ev in tqdm(enumerate(test_data)):
         pri = int(raw_test_data[i][22])
         z = pri_w[pri][:,0].dot(ev)
+        preds[i] = -1 if z < 0 else 1"""
+    preds = np.ones(len(test_data))
+    for i, ev in tqdm(enumerate(test_data)):
+        z = pri_w[:,0].dot(ev)
         preds[i] = -1 if z < 0 else 1
 
-    helpers.create_csv_submission(ids, preds, "results.csv")#"""
+
+    helpers.create_csv_submission(ids, preds, "results.csv")
