@@ -19,7 +19,7 @@ def standardize_matrix(data):
 
 def bucket_events(data):
     """bucket events by PRI_jet_num"""
-    return [np.where(data[:, 22] == i)[0] for i in range(0, 4)]    
+    return [np.where(data[:, 22] == i)[0] for i in range(0, 4)]
 
 def remove_undef(data):
     """replace -999 by the mean"""
@@ -45,7 +45,7 @@ def prepare_data(data, analysed, degree):
 
     matrix = np.column_stack([cols.T, np.log(cols[analysed[0]]).T, np.reciprocal(cols[analysed[1]]).T] + polys)
     polys = cols = pos_cols = nez_cols = None
-    return np.c_[np.ones(len(data)), 
+    return np.c_[np.ones(len(data)),
                  np.where(data[:, 0] < 0, -1, 1), # mass bool
                  standardize_matrix(matrix)]
 
@@ -82,6 +82,33 @@ def compute_ridge_rmse(yb, raw_data, lambda_, degree):
 
     return [np.sum(r) for r in rmse]
 
+def compute_ridge_fail_rate(yb, raw_data, lambda_, degree):
+    analysed = analyse_data(raw_data)
+
+    errors = [0, 0, 0, 0]
+    totals = [0, 0, 0, 0]
+    for (test_y, raw_test_x, train_y, raw_train_x) in cross_validation_datasets(yb, raw_data, 4):
+        train_x = prepare_data(raw_train_x, analysed, degree)
+
+        pri_train_buckets = bucket_events(raw_train_x)
+        pri_w = [ridge_regression(train_y[b], train_x[b], lambda_) for b in pri_train_buckets]
+
+        pri_train_buckets = train_x = train_y = raw_train_x = None
+
+        test_x = prepare_data(raw_test_x, analysed, degree)
+        pri_test_buckets = bucket_events(raw_test_x)
+
+
+        for i, ev in enumerate(test_x):
+            pri = int(raw_test_x[i, 22])
+            assert(pri >= 0 and pri < 4)
+            x = pri_w[pri].dot(ev)
+            pred = -1 if x < 0 else 1
+            errors[pri] += 0 if pred == test_y[i] else 1
+            totals[pri] += 1
+
+    return [e / t for e, t in zip(errors, totals)]
+
 def train_ridge_rmse(yb, raw_data, lambda_, degree):
     analysed = analyse_data(raw_data)
 
@@ -89,11 +116,11 @@ def train_ridge_rmse(yb, raw_data, lambda_, degree):
 
     pri_train_buckets = bucket_events(raw_data)
     pri_w = [ridge_regression(yb[b], train_x[b], lambda_) for b in pri_train_buckets]
-             
+
     return pri_w
 
 def train_logistic(y, x, gamma, lambda_, max_iter, threshold, loss_function=compute_loss_MSE):
-    
+
     tx = x
     w = np.zeros((tx.shape[1], 1))
 
@@ -105,31 +132,33 @@ def train_logistic(y, x, gamma, lambda_, max_iter, threshold, loss_function=comp
         losses.append(loss)
         if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
             return w, losses
-        
+
     return w, losses
 
 
-def grid_search(y, raw_x, filename = "grid_results.csv"):
+def grid_search(y, raw_x, filename = "grid_results.csv", bucket_error_function = compute_ridge_fail_rate):
     with open(filename, 'w') as file:
-        file.write("lambda,degree,meanError\n")
-        degrees = range(1, 9)
-        lambdas = np.logspace(-4, 0, 30)
+        file.write("lambda,degree,A error,B error,C error,D error\n")
+        degrees = range(1, 8)
+        lambdas = np.logspace(-5, 0, 100)
         testing_errors = {}
         for lambda_ in tqdm(lambdas):
-            for degree in degrees:
-                errors = np.array(compute_ridge_rmse(y, raw_x, lambda_, degree))
-                l = [lambda_, degree, np.mean(errors)]
+            for degree in tqdm(degrees):
+                errors = np.array(bucket_error_function(y, raw_x, lambda_, degree))
+                l = [lambda_, degree]
                 file.write(",".join(str(x) for x in l))
+                file.write(",")
+                file.write(",".join(str(x) for x in errors))
                 file.write("\n")
 
 if __name__ == "__main__":
     #lambda = 0.017, degree = 6
-    
+
     #yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
 
     #grid_search(yb, raw_data)
     #print(np.mean(compute_ridge_rmse(yb, raw_data, 0.017, 6)))
-    
+
     """ success = 0
         total = 0
         for i, ev in enumerate(test_x):
@@ -143,10 +172,10 @@ if __name__ == "__main__":
 
     """
     _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
-    test_data = prepare_data(raw_test_data, analyse_data(raw_data), 6)
+    test_data = prepare_data(raw_test_data, analyse_data(raw_data), 7)
 
-    pri_w = train_ridge_rmse(yb, raw_data, 0.017, 6)
-             
+    pri_w = train_ridge_rmse(yb, raw_data, 0.0001, 7)
+
     preds = np.ones(len(test_data))
     for i, ev in tqdm(enumerate(test_data)):
         pri = int(raw_test_data[i][22])
@@ -154,7 +183,7 @@ if __name__ == "__main__":
         preds[i] = -1 if x < 0 else 1
 
     helpers.create_csv_submission(ids, preds, "results.csv")#"""
-    
+
     y_train, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
     train_data = prepare_data(raw_data, analyse_data(raw_data), 6)
 
@@ -181,6 +210,3 @@ if __name__ == "__main__":
         preds[i] = -1 if z < 0 else 1
 
     helpers.create_csv_submission(ids, preds, "results.csv")#"""
-
-
-
