@@ -92,6 +92,22 @@ def train_ridge_rmse(yb, raw_data, lambda_, degree):
              
     return pri_w
 
+def train_logistic(y, x, gamma, lambda_, max_iter, threshold, loss_function=compute_loss_MSE):
+    
+    tx = x
+    w = np.zeros((tx.shape[1], 1))
+
+
+    losses = []
+
+    for iter in tqdm(range(max_iter)):
+        loss, w = learning_by_penalized_gradient(y, tx, w, gamma, lambda_, compute_loss_MSE)
+        losses.append(loss)
+        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+            return w, losses
+        
+    return w, losses
+
 
 def grid_search(y, raw_x, filename = "grid_results.csv"):
     with open(filename, 'w') as file:
@@ -109,7 +125,7 @@ def grid_search(y, raw_x, filename = "grid_results.csv"):
 if __name__ == "__main__":
     #lambda = 0.017, degree = 6
     
-    yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
+    #yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
 
     #grid_search(yb, raw_data)
     #print(np.mean(compute_ridge_rmse(yb, raw_data, 0.017, 6)))
@@ -138,5 +154,33 @@ if __name__ == "__main__":
         preds[i] = -1 if x < 0 else 1
 
     helpers.create_csv_submission(ids, preds, "results.csv")#"""
+    
+    y_train, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
+    train_data = prepare_data(raw_data, analyse_data(raw_data), 6)
+
+    max_iter = 100
+    gamma = 0.01
+    lambda_ = 0.017
+    threshold = 1e-8
+    losses = []
+
+
+    y,x = y_train, train_data
+    y = np.expand_dims(y, axis=1)
+
+    pri_train_buckets = bucket_events(raw_data)
+    pri_w = [train_logistic(y[b], x[b], gamma, lambda_, max_iter, threshold, compute_loss_MSE)[0] for b in pri_train_buckets]
+
+    _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
+    test_data = prepare_data(raw_test_data, analyse_data(raw_data), 6)
+
+    preds = np.ones(len(test_data))
+    for i, ev in tqdm(enumerate(test_data)):
+        pri = int(raw_test_data[i][22])
+        z = pri_w[pri][:,0].dot(ev)
+        preds[i] = -1 if z < 0 else 1
+
+    helpers.create_csv_submission(ids, preds, "results.csv")#"""
+
 
 

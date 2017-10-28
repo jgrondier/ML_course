@@ -109,6 +109,8 @@ def ridge_regression(y, tx, lambda_):
 def sigmoid(t):
     """apply sigmoid function on t."""
     
+    t[ t > 700] = 700
+    
     ex = np.exp(t)
     
     return ex / (ex + 1)
@@ -151,14 +153,14 @@ def build_k_indices(y, k_fold, seed):
 
 
     
-def penalized_logistic_regression(y, tx, w, lambda_):
+def penalized_logistic_regression(y, tx, w, lambda_, loss_function = calculate_loss):
     """return the loss, gradient, and hessian."""
     # ***************************************************
     # INSERT YOUR CODE HERE
     # return loss, gradient, and hessian: TODO
     # ***************************************************
     
-    loss = calculate_loss(y, tx, w)
+    loss = loss_function(y, tx, w)
     
     loss += 0.5 * lambda_ * np.linalg.norm(w) ** 2
     
@@ -166,13 +168,14 @@ def penalized_logistic_regression(y, tx, w, lambda_):
     
     g += lambda_ * w
     
-    hessian = calculate_hessian(y, tx, w)
+    hessian=0
+    #hessian = calculate_hessian(y, tx, w)
+    #hessian +=  0.5 * lambda_ * np.linalg.norm(w) ** 2
     
-    hessian +=  0.5 * lambda_ * np.linalg.norm(w) ** 2
     
-    return loss, g, hessian
+    return loss, g , hessian
 
-def learning_by_penalized_gradient(y, tx, w, gamma, lambda_):
+def learning_by_penalized_gradient(y, tx, w, gamma, lambda_, loss_function = calculate_loss):
     """
     Do one step of gradient descent, using the penalized logistic regression.
     Return the loss and updated w.
@@ -182,7 +185,7 @@ def learning_by_penalized_gradient(y, tx, w, gamma, lambda_):
     # return loss, gradient: TODO
     # ***************************************************
     
-    loss, g, hessian = penalized_logistic_regression(y, tx, w, lambda_)
+    loss, g, hessian = penalized_logistic_regression(y, tx, w, lambda_, loss_function)
     
     # ***************************************************
     # INSERT YOUR CODE HERE
