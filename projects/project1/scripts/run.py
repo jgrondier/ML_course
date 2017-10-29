@@ -87,7 +87,7 @@ def compute_ridge_fail_rate(yb, raw_data, lambda_, degree):
 
     errors = [0, 0, 0, 0]
     totals = [0, 0, 0, 0]
-    for (test_y, raw_test_x, train_y, raw_train_x) in cross_validation_datasets(yb, raw_data, 4):
+    for (test_y, raw_test_x, train_y, raw_train_x) in cross_validation_datasets(yb, raw_data, 4, 42):
         train_x = prepare_data(raw_train_x, analysed, degree)
 
         pri_train_buckets = bucket_events(raw_train_x)
@@ -114,7 +114,7 @@ def compute_logit_fail_rate(yb, raw_data, lambda_, degree, gamma, threshold):
 
     errors = [0, 0, 0, 0]
     totals = [0, 0, 0, 0]
-    for (test_y, raw_test_x, train_y, raw_train_x) in cross_validation_datasets(yb, raw_data, 4):
+    for (test_y, raw_test_x, train_y, raw_train_x) in cross_validation_datasets(yb, raw_data, 4, 42):
         train_x = prepare_data(raw_train_x, analysed, degree)
 
         pri_train_buckets = bucket_events(raw_train_x)
@@ -133,7 +133,7 @@ def compute_logit_fail_rate(yb, raw_data, lambda_, degree, gamma, threshold):
             pri = int(raw_test_x[i, 22])
             assert(pri >= 0 and pri < 4)
             x = pri_w[pri].dot(ev)
-            pred = -1 if x < 0 else 1
+            pred = 0 if x < 0.5 else 1
             errors[pri] += 0 if pred == test_y[i] else 1
             totals[pri] += 1
 
@@ -149,21 +149,24 @@ def train_ridge_rmse(yb, raw_data, lambda_, degree):
 
     return pri_w
 
-def train_logistic(y, x, gamma, lambda_, max_iter, threshold, loss_function=calculate_loss):
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, compute_loss = calculate_loss):
 
-    tx = x
-    w = np.zeros(tx.shape[1])
+    threshold = 1e-8
+
+    """Gradient descent algorithm."""
     losses = []
+    w = initial_w
 
-    for iter in tqdm(range(max_iter)):
-        loss, w = learning_by_penalized_gradient(y, tx, w, gamma, lambda_, loss_function)
-        if loss < 0:
-            print(loss)
-        losses.append(np.sqrt(loss))
-        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
-            return w, losses
+    for n_iter in tqdm(range(max_iters)):
+        loss, g, _ = penalized_logistic_regression(y, tx, w, lambda_)
+        w = w - gamma * gradient
 
-    return w, losses
+        losses.append(loss)
+
+        if n_iter > 0 and np.abs(losses[n_iter] - losses[n_iter-1]) < threshold:
+            return loss, w
+
+    return losses[-1], w
 
 
 def grid_search(y, raw_x, filename = "grid_results.csv", bucket_error_function = compute_ridge_fail_rate):
@@ -189,11 +192,14 @@ def grid_search_logit(y, raw_x, filename = "logit_grid_results.csv"):
         gammas = [.017]#np.logspace(-3, -1, 30)
         thresholds = [1e-8]#np.logspace(-10, -3, 30)
         testing_errors = {}
+        
+        logit_y = y*0.5+0.5
+        
         for lambda_ in tqdm(lambdas):
             for degree in tqdm(degrees):
                 for gamma in tqdm(gammas):
                     for threshold in tqdm(thresholds):
-                        errors = np.array(compute_logit_fail_rate(y, raw_x, lambda_, degree, gamma, threshold))
+                        errors = np.array(compute_logit_fail_rate(logit_y, raw_x, lambda_, degree, gamma, threshold))
                         l = [lambda_, degree, gamma, threshold]
                         file.write(",".join(str(x) for x in l))
                         file.write(",")
@@ -201,11 +207,17 @@ def grid_search_logit(y, raw_x, filename = "logit_grid_results.csv"):
                         file.write("\n")
 
 if __name__ == "__main__":
-    #lambda = 0.017, degree = 6
+    """for ridge:
+    A: 1e-5, 1
+    B: 2.5e-5, 7
+    C: 1e-5, 2
+    D: 1e-4, 7
+    """
 
     yb, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
+    #print(compute_ridge_fail_rate(yb, raw_data, 1e-5, 7))
 
-    grid_search_logit(yb, raw_data)
+    #grid_search(yb, raw_data)
     #print(np.mean(compute_ridge_rmse(yb, raw_data, 0.017, 6)))
 
     """ success = 0
@@ -221,17 +233,23 @@ if __name__ == "__main__":
 
     """
     _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
-    test_data = prepare_data(raw_test_data, analyse_data(raw_data), 7)
+    lambdas = [1e-5, 2.5e-5, 1e-5, 1e-4]
+    degrees = [1,7,2,7]
+    
+    preds = []
+    ids_final = []
+    
+    for i in tqdm(range(len(degrees))):
+        test_data = prepare_data(raw_test_data, analyse_data(raw_data), degrees[i])
+        w = train_ridge_rmse(yb, raw_data, lambdas[i], degrees[i])[i]
+        for idx, ev in tqdm(enumerate(test_data)):
+            pri = int(raw_test_data[idx][22])
+            if pri == i:
+                x = w.dot(ev)
+                preds.append(-1 if x < 0 else 1)
+                ids_final.append(ids[idx])
 
-    pri_w = train_ridge_rmse(yb, raw_data, 0.0001, 7)
-
-    preds = np.ones(len(test_data))
-    for i, ev in tqdm(enumerate(test_data)):
-        pri = int(raw_test_data[i][22])
-        x = pri_w[pri].dot(ev)
-        preds[i] = -1 if x < 0 else 1
-
-    helpers.create_csv_submission(ids, preds, "results.csv")#"""
+    helpers.create_csv_submission(ids_final, preds, "results.csv")#"""
 
     """
     y_train, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
