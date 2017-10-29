@@ -32,7 +32,7 @@ def calculate_loss(y, tx, w):
     """compute the cost by negative log likelihood."""
     loss = 0    
     for i in range(0 , len(y)):
-        loss += (np.log(1 + np.exp(np.dot(tx[i],w))) - y[i]*(np.dot(tx[i],w)))
+        loss += (np.log(1 + np.exp(np.minimum(np.dot(tx[i],w), 700))) - y[i]*(np.dot(tx[i],w)))
         
     return loss
 
@@ -118,8 +118,9 @@ def sigmoid(t):
 
 def calculate_gradient(y, tx, w):
     """compute the gradient of loss."""
-
-    return tx.T.dot(sigmoid(np.dot(tx,w)) - y)
+    txw = np.dot(tx,w)
+    txwy = sigmoid(txw) - y
+    return tx.T.dot(txwy)
 
 def logistic_regression(y, tx, w):
     """return the loss, gradient, and hessian."""
@@ -135,11 +136,6 @@ def calculate_hessian(y, tx, w):
     
     ret = tx.T.dot(S)
     return ret.dot(tx)
-
-
-def logistic_regression(y, tx, w):
-    """return the loss, gradient, and hessian."""
-    return calculate_loss(y, tx, w), calculate_gradient(y, tx, w), calculate_hessian(y, tx, w)
 
 def build_k_indices(y, k_fold, seed):
     """build k indices for k-fold."""
