@@ -256,10 +256,9 @@ if __name__ == "__main__":
     y_train, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
     train_data = prepare_data(raw_data, analyse_data(raw_data), 6)
 
-    max_iters = 500
+    max_iters = 25
     gamma = 0.01
-    lambda_ = 0.001
-    threshold = 1e-8
+    lambda_ = 0.01
     losses = []
 
 
@@ -273,15 +272,17 @@ if __name__ == "__main__":
     _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
     test_data = prepare_data(raw_test_data, analyse_data(raw_data), 6)#"""
 
+
+
     """preds = np.ones(len(test_data))
     for i, ev in tqdm(enumerate(test_data)):
         pri = int(raw_test_data[i][22])
         z = pri_w[pri][:,0].dot(ev)
         preds[i] = -1 if z < 0 else 1"""
-    preds = np.ones(len(test_data))
-    for i, ev in tqdm(enumerate(test_data)):
-        z = pri_w[:,0].dot(ev)
-        preds[i] = -1 if z < 0 else 1
+
+    sig  = sigmoid(test_data.dot(pri_w))
+
+    preds = [ -1 if z < 0.5 else 1 for z in sig ]
 
 
     helpers.create_csv_submission(ids, preds, "results.csv")

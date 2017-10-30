@@ -30,10 +30,10 @@ def compute_loss_MAE(y, tx, w):
 
 def calculate_loss(y, tx, w):
     """compute the cost by negative log likelihood."""
-    loss = 0    
+    loss = 0
     for i in range(0 , len(y)):
         loss += (np.log(1 + np.exp(np.minimum(np.dot(tx[i],w), 700))) - y[i]*(np.dot(tx[i],w)))
-        
+
     return loss
 
 def compute_gradient(y, tx, w):
@@ -50,7 +50,7 @@ def gradient_descent(y, tx, initial_w, max_iters, gamma, compute_loss = compute_
         gradient = compute_gradient(y, tx, w)
         loss = compute_loss(y, tx, w)
         w = w - gamma * gradient
-        
+
         # store w and loss
         ws.append(w)
         losses.append(loss)
@@ -71,12 +71,12 @@ def least_squares(y, tx):
     return compute_loss_MSE(y, tx, opt), opt
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
-    
+
     return gradiant_descent(y, tx, initial_w, max_iters, gamma, compute_loss = calculate_loss)
-    
-    
+
+
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
-    
+
     batch_size = 10
     new_y, new_tx = y.reshape(-1, batch_size), tx.reshape(-1, batch_size)
     combined = list(zip(y, tx))
@@ -108,11 +108,11 @@ def ridge_regression(y, tx, lambda_):
 
 def sigmoid(t):
     """apply sigmoid function on t."""
-    
+
     t[ t > 700] = 700
-    
+
     ex = np.exp(t)
-    
+
     return ex / (ex + 1)
 
 
@@ -129,11 +129,11 @@ def logistic_regression(y, tx, w):
 def calculate_hessian(y, tx, w):
     """return the hessian of the loss function."""
     S = np.identity(len(y))
-    
+
     for i in range(len(y)):
         xtw = tx[i].T.dot(w)
         S[i, i] = sigmoid(xtw) * ( 1 - sigmoid(xtw))
-    
+
     ret = tx.T.dot(S)
     return ret.dot(tx)
 
@@ -148,27 +148,27 @@ def build_k_indices(y, k_fold, seed):
     return np.array(k_indices)
 
 
-    
+
 def penalized_logistic_regression(y, tx, w, lambda_, loss_function = calculate_loss):
     """return the loss, gradient, and hessian."""
     # ***************************************************
     # INSERT YOUR CODE HERE
     # return loss, gradient, and hessian: TODO
     # ***************************************************
-    
+
     loss = loss_function(y, tx, w)
-    
+
     loss += 0.5 * lambda_ * np.linalg.norm(w) ** 2
-    
+
     g = calculate_gradient(y, tx, w)
-    
+
     g += lambda_ * w
-    
+
     hessian=0
     #hessian = calculate_hessian(y, tx, w)
     #hessian +=  0.5 * lambda_ * np.linalg.norm(w) ** 2
-    
-    
+
+
     return loss, g , hessian
 
 def learning_by_penalized_gradient(y, tx, w, gamma, lambda_, loss_function = calculate_loss):
@@ -180,19 +180,19 @@ def learning_by_penalized_gradient(y, tx, w, gamma, lambda_, loss_function = cal
     # INSERT YOUR CODE HERE
     # return loss, gradient: TODO
     # ***************************************************
-    
+
     loss, g, hessian = penalized_logistic_regression(y, tx, w, lambda_, loss_function)
-    
+
     # ***************************************************
     # INSERT YOUR CODE HERE
     # update w: TODO
     # ***************************************************
-    
+
     w = w - gamma*g
-    
-    
+
+
     return loss, w
-    
+
 def cross_validation_datasets(y, tx, k_fold, seed = time()):
     k_indices = build_k_indices(y, k_fold, seed)
     """return the loss of ridge regression."""
