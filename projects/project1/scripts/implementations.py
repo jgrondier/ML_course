@@ -32,9 +32,16 @@ def calculate_loss(y, tx, w):
     """compute the cost by negative log likelihood."""
     loss = 0
     for i in range(0 , len(y)):
-        loss += (np.log(1 + np.exp(np.minimum(np.dot(tx[i],w), 700))) - y[i]*(np.dot(tx[i],w)))
+        txiw = np.dot(tx[i],w)
+
+        if np.max(txiw) > 700:
+            loss += txiw
+        else:
+            loss += np.log(1 + np.exp(np.dot(tx[i],w)))
+        loss -= y[i]*(txiw)
 
     return loss
+
 
 def compute_gradient(y, tx, w):
     """Compute the gradient."""
@@ -205,3 +212,27 @@ def cross_validation_datasets(y, tx, k_fold, seed = time()):
         train_y = (y[k_indices[np.arange(len(k_indices))!=k]]).flatten()
         train_x = (tx[k_indices[np.arange(len(k_indices))!=k]]).reshape(len(train_y), tx.shape[1])
         yield test_y, test_x, train_y, train_x
+
+def reg_logistic_regression(y, tx, lambda_=0.01, initial_w=None, max_iters=50, gamma=10, compute_loss = calculate_loss):
+
+    """Return loss, w of a reg logistic regression with at most max_iters iterations"""
+
+    if initial_w is None:
+        initial_w = np.zeros((tx.shape[1], 1))
+        
+
+    threshold = 1e-8
+
+    losses = []
+    w = initial_w
+
+    for n_iter in tqdm(range(max_iters)):
+        loss, g, _ = penalized_logistic_regression(y, tx, w, lambda_)
+        w = w - gamma * g
+
+        losses.append(loss)
+
+        if n_iter > 0 and np.abs(losses[n_iter] - losses[n_iter-1]) < threshold:
+            return loss, w
+
+    return losses[-1], w
