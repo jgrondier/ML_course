@@ -72,10 +72,14 @@ def least_squares(y, tx):
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
 
+    """Return a gradient descent of least squares"""
+
     return gradiant_descent(y, tx, initial_w, max_iters, gamma, compute_loss = calculate_loss)
 
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
+
+    """Returns a batched stochastic gradient descent of least squares"""
 
     batch_size = 10
     new_y, new_tx = y.reshape(-1, batch_size), tx.reshape(-1, batch_size)
@@ -151,10 +155,6 @@ def build_k_indices(y, k_fold, seed):
 
 def penalized_logistic_regression(y, tx, w, lambda_, loss_function = calculate_loss):
     """return the loss, gradient, and hessian."""
-    # ***************************************************
-    # INSERT YOUR CODE HERE
-    # return loss, gradient, and hessian: TODO
-    # ***************************************************
 
     loss = loss_function(y, tx, w)
 
@@ -164,7 +164,7 @@ def penalized_logistic_regression(y, tx, w, lambda_, loss_function = calculate_l
 
     g += lambda_ * w
 
-    hessian=0
+    hessian=0 #Set to 0 because not used and creates memory errors
     #hessian = calculate_hessian(y, tx, w)
     #hessian +=  0.5 * lambda_ * np.linalg.norm(w) ** 2
 

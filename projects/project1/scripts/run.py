@@ -7,6 +7,7 @@ import gc
 
 
 def uniq_count(t):
+    """returns the number of unique values in t """
     vals = set()
     for x in t:
         vals.add(x)
@@ -29,9 +30,11 @@ def remove_undef(data):
     return data
 
 def columns(data):
+    """Returns an matrix without undefined values and specified colums"""
     return np.array([remove_undef(c) for i, c in enumerate(data.T) if i not in [22]])#[14, 15, 17, 18, 22, 24, 25, 27, 28]])
 
 def analyse_data(data):
+    """Returns ivertibles columns and sqrt columns"""
     cols = columns(data)
     pos_cols = [i for i, c in enumerate(cols) if c.min() > 0]
     nez_cols = [i for i, c in enumerate(cols) if 0 not in c]
@@ -62,6 +65,9 @@ def linreg(y, tx):
 
 
 def compute_ridge_rmse(yb, raw_data, lambda_, degree):
+
+    """Returns the RMSE for one specific lambda_, degree combination"""
+
     analysed = analyse_data(raw_data)
 
     rmse = [[], [], [], []]
@@ -83,6 +89,9 @@ def compute_ridge_rmse(yb, raw_data, lambda_, degree):
     return [np.sum(r) for r in rmse]
 
 def compute_ridge_fail_rate(yb, raw_data, lambda_, degree):
+
+    """Returns the fail rate for one specific (degree, lambda_) combination"""
+
     analysed = analyse_data(raw_data)
 
     errors = [0, 0, 0, 0]
@@ -110,6 +119,9 @@ def compute_ridge_fail_rate(yb, raw_data, lambda_, degree):
     return [e / t for e, t in zip(errors, totals)]
 
 def compute_logit_fail_rate(yb, raw_data, lambda_, degree, gamma, threshold):
+
+    """Returns the fail rate for one specific (degree, lambda_, gamma) combination with a logistic regression"""
+
     analysed = analyse_data(raw_data)
 
     errors = [0, 0, 0, 0]
@@ -151,9 +163,10 @@ def train_ridge_rmse(yb, raw_data, lambda_, degree):
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, compute_loss = calculate_loss):
 
+    """Return loss, w of a reg logistic regression with at most max_iters iterations"""
+
     threshold = 1e-8
 
-    """Gradient descent algorithm."""
     losses = []
     w = initial_w
 
@@ -170,6 +183,9 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, compute
 
 
 def grid_search(y, raw_x, filename = "grid_results.csv", bucket_error_function = compute_ridge_fail_rate):
+
+    """Calcuates the fail rate for differente values of Lambda and Gamma and prints the fail rate for each bucket and lambda with a regular regression"""
+
     with open(filename, 'w') as file:
         file.write("lambda,degree,A error,B error,C error,D error\n")
         degrees = range(1, 8)
@@ -185,6 +201,9 @@ def grid_search(y, raw_x, filename = "grid_results.csv", bucket_error_function =
                 file.write("\n")
 
 def grid_search_logit(y, raw_x, filename = "logit_grid_results.csv"):
+
+    """Same as grid search but with a logistic regression"""
+
     with open(filename, 'w') as file:
         file.write("lambda,degree,gamma,threshhold,A error,B error,C error,D error\n")
         degrees = range(1, 8)
