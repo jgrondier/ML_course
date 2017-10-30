@@ -44,7 +44,7 @@ We started off by applying a simple gradient descent with linear regression on o
 \\We later tried using regularized logistic regression with GD, however the results were on par with unpenalized linear regression, so we abandoned that idea.
 
 \subsection*{Bucketing and hyperparameters}
-We implemented a grid search method using 4-fold cross-validation to find the best value of $\lambda$ and of how many degrees of polynomial features we wanted ; however that didn't really improve our results.
+We implemented a grid search method with 4-fold cross-validation to find the best value of $\lambda$ and of how many degrees of polynomial features we wanted ; however that didn't really improve our results.
 \\Instead, we decided to separate the dataset into 4 subsets, according to PRI\_jet\_num. Then we trained a different ridge regression model for each ``bucket'', which could ignore features that were undefined for that category, and specialise more.
 \\We went even further by gridsearching hyperparameters per bucket: this gave us 4 different $\lambda$, degree pairs, the ``optimal'' ones for each bucket (see table \ref{tab:hyperparams}). This let us reach 80.7\% precision rate on the Kaggle leaderboard.
 
@@ -53,12 +53,12 @@ We implemented a grid search method using 4-fold cross-validation to find the be
   \tabulinesep=.4ex
 \begin{tabu}{|X[c]|X[c]|X[c]|X[c]|} \hline
 PRI\_jet\_num & $\lambda$ & degrees & error rate \\ \hline
-0 & $1*10^{-5}$ & 1 & \\
-1 & $2.5*10^{-5}$ & 7 & \\
-2 & $1*10^{-5}$ & 2 & \\
-3 & $1*10^{-4}$ & 7 & \\ \hline
+0 & $1*10^{-5}$ & 1 & 0.168\\
+1 & $2.5*10^{-5}$ & 7 & 0.214\\
+2 & $1*10^{-5}$ & 2 & 0.201\\
+3 & $1*10^{-4}$ & 7 & 0.209\\ \hline
 \end{tabu}
-  \caption{Best $\lambda$ and degree hyperparameters for each subset} \label{tab:hyperparams}
+  \caption{Lowest error rate $\lambda$ and degree hyperparameters for each subset} \label{tab:hyperparams}
 \end{table}
 
 \section{Discussion}
