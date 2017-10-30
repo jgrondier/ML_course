@@ -29,8 +29,8 @@ def remove_undef(data):
     return data
 
 def columns(data):
-    return np.array([remove_undef(c) for i, c in enumerate(data.T) if i not in [14, 15, 17, 18, 22, 24, 25, 27, 28]])
-
+    return np.array([remove_undef(c) for i, c in enumerate(data.T) if i not in [22]])#[14, 15, 17, 18, 22, 24, 25, 27, 28]])
+                    
 def analyse_data(data):
     cols = columns(data)
     pos_cols = [i for i, c in enumerate(cols) if c.min() > 0]
@@ -158,9 +158,8 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, compute
     w = initial_w
 
     for n_iter in tqdm(range(max_iters)):
-
         loss, g, _ = penalized_logistic_regression(y, tx, w, lambda_)
-        w = w - gamma * g
+        w = w - gamma * gradient
 
         losses.append(loss)
 
@@ -184,7 +183,7 @@ def grid_search(y, raw_x, filename = "grid_results.csv", bucket_error_function =
                 file.write(",")
                 file.write(",".join(str(x) for x in errors))
                 file.write("\n")
-
+                
 def grid_search_logit(y, raw_x, filename = "logit_grid_results.csv"):
     with open(filename, 'w') as file:
         file.write("lambda,degree,gamma,threshhold,A error,B error,C error,D error\n")
@@ -193,9 +192,9 @@ def grid_search_logit(y, raw_x, filename = "logit_grid_results.csv"):
         gammas = [.017]#np.logspace(-3, -1, 30)
         thresholds = [1e-8]#np.logspace(-10, -3, 30)
         testing_errors = {}
-
+        
         logit_y = y*0.5+0.5
-
+        
         for lambda_ in tqdm(lambdas):
             for degree in tqdm(degrees):
                 for gamma in tqdm(gammas):
@@ -232,14 +231,14 @@ if __name__ == "__main__":
         print("\ntotal average =", (success / len(test_x) * 100))"""
 
 
-    """
+    #"""
     _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
     lambdas = [1e-5, 2.5e-5, 1e-5, 1e-4]
     degrees = [1,7,2,7]
-
+    
     preds = []
     ids_final = []
-
+    
     for i in tqdm(range(len(degrees))):
         test_data = prepare_data(raw_test_data, analyse_data(raw_data), degrees[i])
         w = train_ridge_rmse(yb, raw_data, lambdas[i], degrees[i])[i]
@@ -252,24 +251,25 @@ if __name__ == "__main__":
 
     helpers.create_csv_submission(ids_final, preds, "results.csv")#"""
 
-
+    """
     y_train, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
     train_data = prepare_data(raw_data, analyse_data(raw_data), 6)
 
-    max_iters = 500
+    max_iter = 100
     gamma = 0.01
-    lambda_ = 0.001
+    lambda_ = 0.017
     threshold = 1e-8
     losses = []
 
 
-    y, tx = y_train, train_data
+    y,x = y_train, train_data
     y = np.expand_dims(y, axis=1)
 
-    w = np.zeros((tx.shape[1], 1))
+    #pri_train_buckets = bucket_events(raw_data)
+    #pri_w = [train_logistic(y[b], x[b], gamma, lambda_, max_iter, threshold, compute_loss_MSE)[0] for b in pri_train_buckets]
 
-    _, pri_w = reg_logistic_regression(y, tx, lambda_, w, max_iters, gamma)
-
+    pri_w = train_logistic(y, x, gamma, lambda_, max_iter, threshold, calculate_loss)[0]
+    
     _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
     test_data = prepare_data(raw_test_data, analyse_data(raw_data), 6)#"""
 
@@ -278,10 +278,11 @@ if __name__ == "__main__":
         pri = int(raw_test_data[i][22])
         z = pri_w[pri][:,0].dot(ev)
         preds[i] = -1 if z < 0 else 1"""
+    """
     preds = np.ones(len(test_data))
     for i, ev in tqdm(enumerate(test_data)):
         z = pri_w[:,0].dot(ev)
         preds[i] = -1 if z < 0 else 1
 
 
-    helpers.create_csv_submission(ids, preds, "results.csv")
+    helpers.create_csv_submission(ids, preds, "results.csv")#"""
