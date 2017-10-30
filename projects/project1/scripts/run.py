@@ -3,8 +3,6 @@ from implementations import *
 from jgrondier_helpers import *
 import proj1_helpers as helpers
 import numpy as np
-import gc
-
 
 def uniq_count(t):
     vals = set()
