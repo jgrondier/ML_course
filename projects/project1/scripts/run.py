@@ -280,9 +280,9 @@ if __name__ == "__main__":
         z = pri_w[pri][:,0].dot(ev)
         preds[i] = -1 if z < 0 else 1"""
 
-    sig  = sigmoid(test_data.dot(pri_w))
+    #sig  = sigmoid(test_data.dot(pri_w))
 
-    preds = [ -1 if z < 0.5 else 1 for z in sig ]
+    #preds = [ -1 if z < 0.5 else 1 for z in sig ]
 
 
-    helpers.create_csv_submission(ids, preds, "results.csv")#"""
+    #helpers.create_csv_submission(ids, preds, "results.csv")#"""
