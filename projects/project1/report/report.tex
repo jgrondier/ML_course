@@ -2,7 +2,12 @@
 
 \usepackage{hyperref}
 \usepackage{graphicx}	% For figure environment
+\usepackage[english]{babel}
+\usepackage{tabu}
 
+
+\newcommand\Tstrut{\rule{0pt}{2.6ex}}         % = `top' strut
+\newcommand\Bstrut{\rule[-0.9ex]{0pt}{0pt}}   % = `bottom' strut
 
 \begin{document}
 \title{Class Project 1 Report}
@@ -14,34 +19,54 @@
 \maketitle
 
 \begin{abstract}
-% Present the project here I guess ? Say our implementation uses such and such method.
+In this project, we were given a dataset consisting of LHC measurements (and derived data) of particle collisions. Our task was to apply different machine learning methods to this dataset to train a model that would predict whether or not those measurements correspond to a Higg's Boson or not.
+
+After trying different methods, we were able to attain more than 80\% prediction precision using 4 different ridge regression models, each with separate grid-searched hyperparameters.
 \end{abstract}
 
 \section{Introduction}
 % Do we even need one ?
 
-\section{Models and Methods}
-% started by looking at the dataset ; realized 4 buckets ; applied linreg ; applied ridge ; tried logit but shit results
-\subsection{Exploratory Data Analysis}
+\section{Exploratory Data Analysis}
 First, we started off this project by opening up the dataset in a spreadsheet software.
 
-We quickly realized that a number of columns were sometimes undefined (-999). However, we also noted that, apart from DER_mass_MMC, which features were defined was completely determined by the value column 22, PRI_jet_num, which, incidentally, is the only categorical column. %TODO: explain which columns are defined for which pri jet num
+We quickly realized that a number of columns were sometimes undefined (-999). However, we also noted that, apart from DER\_mass\_MMC, which features were defined was completely determined by the value column 22, PRI\_jet\_num, which, incidentally, is the only categorical column. %TODO: explain which columns are defined for which pri jet num
 
 We also plotted the distribution of each feature, relative to whether the event was categorized as a HB. These plots can be found in data/images/. They show that some features have a normal distribution (which is good for linear regression), but others seem to have an inverse %what's the actual term ?
 or parabolic distribution.
 
-\subsection{Feature processing}
-Since we wanted versions of features with normal distributions, we decided to construct artificial features from existing ones and add them as feature columns. As such, our prepare_data method adds inverse, log, and polynomial versions of the individual feature columns.
+\subsection*{Feature processing}
+Since we wanted versions of features with normal distributions, we decided to construct artificial features from existing ones and add them as feature columns. As such, our prepare\_data method adds inverse, log, and polynomial versions of the individual feature columns when possible.
 
-We also looked at the pearson correlation between the different features and whether or not they were a Higgs Boson. By removing the %how many ?
-columns with the lowest PCC (less than 0.01) we saved ourselves a lot of processing time and RAM usage, while lowering our cross-validated precision on the training set by less than 0.5\%.
+\section{Models applied}
+We started off by applying a simple gradient descent with linear regression on our training set. However, this gave us mediocre results (around 75\%).
+\\So we started using ridge regression (with MSE). This quickly gave us much better results, even with arbitrary $\lambda$ values: 80.4\% for $\lambda = 0.001$ and polynomial features up to degree 7.
+\\We later tried using regularized logistic regression with GD, however the results were on par with unpenalized linear regression, so we abandoned that idea.
 
-\section{Results}
-% shit
+\subsection*{Bucketing and hyperparameters}
+We implemented a grid search method using 4-fold cross-validation to find the best value of $\lambda$ and of how many degrees of polynomial features we wanted ; however that didn't really improve our results.
+\\Instead, we decided to separate the dataset into 4 subsets, according to PRI\_jet\_num. Then we trained a different ridge regression model for each ``bucket'', which could ignore features that were undefined for that category, and specialise more.
+\\We went even further by gridsearching hyperparameters per bucket: this gave us 4 different $\lambda$, degree pairs, the ``optimal'' ones for each bucket (see table \ref{tab:hyperparams}). This let us reach 80.7\% precision rate on the Kaggle leaderboard.
+
+\begin{table}
+  \centering
+  \tabulinesep=.4ex
+\begin{tabu}{|X[c]|X[c]|X[c]|X[c]|} \hline
+PRI\_jet\_num & $\lambda$ & degrees & error rate \\ \hline
+0 & $1*10^{-5}$ & 1 & \\
+1 & $2.5*10^{-5}$ & 7 & \\
+2 & $1*10^{-5}$ & 2 & \\
+3 & $1*10^{-4}$ & 7 & \\ \hline
+\end{tabu}
+  \caption{Best $\lambda$ and degree hyperparameters for each subset} \label{tab:hyperparams}
+\end{table}
 
 \section{Discussion}
-%?
+\subsection{Logistic Regression}
+While we were unable to reach a meaningful result with regularized logistic regression, we believe this is not because it is not the right model for this dataset (on the contrary, this dataset looks like a perfect fit to apply logistic regression on), but rather because, as we were all beginners in ML and Data Science in general, our implementation of logistic regression may be faulty.
 
+\subsection{Bucketing}
+While our separation of the dataset into 4 different subsets gave us better results in this case, it also meant each model had less data to be trained on. Since the original dataset was large enough, this was not a problem in this case ; however, with a smaller dataset, this might have caused our models to massively overfit, especially when adding multiple polynomial features (we have upwards of 200 features when we build polynomial features up to degree 7!).
 
 \section{Summary}
 
