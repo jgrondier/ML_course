@@ -5,3 +5,8 @@ This is our project submission for the autumn 2017 CS-433 class. It creates a `r
 We implement in `scripts/implementations` helpers for multiple types of regressions, such as `ridge_regression` and `logistic_regression`, along with multiple additional functions such as methods for getting the best parameters for a given regression.
 
 To reproduce the dataset of our submission, just run `python run.py` from inside the `scripts` folder.
+
+Authors:
+*Gregoire Angerand
+*Boris Goullet
+*Julien Grondier
