@@ -29,7 +29,7 @@ def remove_undef(data):
     return data
 
 def columns(data):
-    return np.array([remove_undef(c) for i, c in enumerate(data.T) if i not in [14, 15, 17, 18, 22, 24, 25, 27, 28]])
+    return np.array([remove_undef(c) for i, c in enumerate(data.T) if i not in [22]])#[14, 15, 17, 18, 22, 24, 25, 27, 28]])
 
 def analyse_data(data):
     cols = columns(data)
@@ -158,9 +158,8 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, compute
     w = initial_w
 
     for n_iter in tqdm(range(max_iters)):
-
         loss, g, _ = penalized_logistic_regression(y, tx, w, lambda_)
-        w = w - gamma * g
+        w = w - gamma * gradient
 
         losses.append(loss)
 
@@ -232,7 +231,7 @@ if __name__ == "__main__":
         print("\ntotal average =", (success / len(test_x) * 100))"""
 
 
-    """
+    #"""
     _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
     lambdas = [1e-5, 2.5e-5, 1e-5, 1e-4]
     degrees = [1,7,2,7]
@@ -252,7 +251,7 @@ if __name__ == "__main__":
 
     helpers.create_csv_submission(ids_final, preds, "results.csv")#"""
 
-
+    """
     y_train, raw_data, _ = helpers.load_csv_data("../data/train.csv", False)
     train_data = prepare_data(raw_data, analyse_data(raw_data), 6)
 
@@ -262,12 +261,13 @@ if __name__ == "__main__":
     losses = []
 
 
-    y, tx = y_train, train_data
+    y,x = y_train, train_data
     y = np.expand_dims(y, axis=1)
 
-    w = np.zeros((tx.shape[1], 1))
+    #pri_train_buckets = bucket_events(raw_data)
+    #pri_w = [train_logistic(y[b], x[b], gamma, lambda_, max_iter, threshold, compute_loss_MSE)[0] for b in pri_train_buckets]
 
-    _, pri_w = reg_logistic_regression(y, tx, lambda_, w, max_iters, gamma)
+    pri_w = train_logistic(y, x, gamma, lambda_, max_iter, threshold, calculate_loss)[0]
 
     _, raw_test_data, ids = helpers.load_csv_data("../data/test.csv", False)
     test_data = prepare_data(raw_test_data, analyse_data(raw_data), 6)#"""
@@ -285,4 +285,4 @@ if __name__ == "__main__":
     preds = [ -1 if z < 0.5 else 1 for z in sig ]
 
 
-    helpers.create_csv_submission(ids, preds, "results.csv")
+    helpers.create_csv_submission(ids, preds, "results.csv")#"""

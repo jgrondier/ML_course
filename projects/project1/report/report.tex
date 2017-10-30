@@ -20,32 +20,21 @@
 \section{Introduction}
 % Do we even need one ?
 
-\begin{description}
-\item[Abstract] \ \\
-  Short description of the whole paper, to help the
-  reader decide whether to read it.
-\item[Introduction] \ \\
-  Describe your problem and state your
-  contributions.
-\item[Models and Methods] \ \\
-  Describe your idea and how it was implemented to solve
-  the problem. Survey the related work, giving credit where credit is
-  due.
-\item[Results] \ \\
-  Show evidence to support your claims made in the
-  introduction.
-\item[Discussion] \ \\
-  Discuss the strengths and weaknesses of your
-  approach, based on the results. Point out the implications of your
-  novel idea on the application concerned.
-\item[Summary] \ \\
-  Summarize your contributions in light of the new
-  results.
-\end{description}
-
 \section{Models and Methods}
 % started by looking at the dataset ; realized 4 buckets ; applied linreg ; applied ridge ; tried logit but shit results
+\subsection{Exploratory Data Analysis}
+First, we started off this project by opening up the dataset in a spreadsheet software.
 
+We quickly realized that a number of columns were sometimes undefined (-999). However, we also noted that, apart from DER_mass_MMC, which features were defined was completely determined by the value column 22, PRI_jet_num, which, incidentally, is the only categorical column. %TODO: explain which columns are defined for which pri jet num
+
+We also plotted the distribution of each feature, relative to whether the event was categorized as a HB. These plots can be found in data/images/. They show that some features have a normal distribution (which is good for linear regression), but others seem to have an inverse %what's the actual term ?
+or parabolic distribution.
+
+\subsection{Feature processing}
+Since we wanted versions of features with normal distributions, we decided to construct artificial features from existing ones and add them as feature columns. As such, our prepare_data method adds inverse, log, and polynomial versions of the individual feature columns.
+
+We also looked at the pearson correlation between the different features and whether or not they were a Higgs Boson. By removing the %how many ?
+columns with the lowest PCC (less than 0.01) we saved ourselves a lot of processing time and RAM usage, while lowering our cross-validated precision on the training set by less than 0.5\%.
 
 \section{Results}
 % shit
