@@ -7,6 +7,6 @@ We implement in `scripts/implementations` helpers for multiple types of regressi
 To reproduce the dataset of our submission, just run `python run.py` from inside the `scripts` folder.
 
 Authors:
-*Gregoire Angerand
+*Grégoire Angerand
 *Boris Goullet
 *Julien Grondier
