@@ -39,8 +39,8 @@ def img_crop(im, w, h):
     imgwidth = im.shape[0]
     imgheight = im.shape[1]
     is_2d = len(im.shape) < 3
-    for i in range(0,imgheight,h):
-        for j in range(0,imgwidth,w):
+    for i in range(0, imgheight,h):
+        for j in range(0, imgwidth,w):
             if is_2d:
                 im_patch = im[j:j+w, i:i+h]
             else:
@@ -58,17 +58,16 @@ def extract_features(img):
 
 # Extract 2-dimensional features consisting of average gray color as well as variance
 def extract_features_2d(img):
-    feat_m = np.mean(img)
+    """feat_m = np.mean(img)
     feat_v = np.var(img)
     feat = np.append(feat_m, feat_v)
-    return feat
+    return feat"""
+    return np.mean(img, axis = 2).flatten()
 
 # Extract features for a given image
-def extract_img_features(filename):
-    img = load_image(filename)
-    img_patches = img_crop(img, patch_size, patch_size)
-    X = np.asarray([ extract_features_2d(img_patches[i]) for i in range(len(img_patches))])
-    return X
+def extract_img_features(img):
+    img = img_crop(img, patch_size, patch_size)
+    return np.asarray([extract_features_2d(patch) for patch in img])
 
 # Convert array of labels to an image
 def label_to_img(imgwidth, imgheight, w, h, labels):
@@ -92,42 +91,37 @@ def make_img_overlay(img, predicted_img):
     new_img = Image.blend(background, overlay, 0.2)
     return new_img
 
+def load_training_set(root_dir, max_images = 20):
+    im_dir = root_dir + "images/"
+    gt_dir = root_dir + "groundtruth/"
+    cn_dir = root_dir + "cannyedges/"
+    
+    files = os.listdir(im_dir)
+    n = min(max_images, len(files))
+    
+    imgs    = [load_image(im_dir + files[i]) for i in range(n)]
+    gt_imgs = [load_image(gt_dir + files[i]) for i in range(n)]
+    cn_imgs = [load_image(cn_dir + files[i]) for i in range(n)]
+
+    return (imgs, gt_imgs, cn_imgs)
 
 
-
-
-
+def compute_patches(imgs):
+    images = [img_crop(img, patch_size, patch_size) for img in imgs]
+    return np.asarray([patch for img in images for patch in img])
 
 
 
 
 
 # Loaded a set of images
-root_dir = "training/"
-
-image_dir = root_dir + "images/"
-files = os.listdir(image_dir)
-n = min(20, len(files)) # Load maximum 20 images
-print("Loading " + str(n) + " images")
-imgs = [load_image(image_dir + files[i]) for i in range(n)]
-print(files[0])
-
-gt_dir = root_dir + "groundtruth/"
-print("Loading " + str(n) + " images")
-gt_imgs = [load_image(gt_dir + files[i]) for i in range(n)]
-print(files[0])
-
-n = 10 # Only use 10 images for training
+imgs, gt_imgs, _ = load_training_set("training/")
 
 # Extract patches from input images
-patch_size = 16 # each patch is 16*16 pixels
+patch_size = 40 # each patch is 16*16 pixels
 
-img_patches = [img_crop(imgs[i], patch_size, patch_size) for i in range(n)]
-gt_patches = [img_crop(gt_imgs[i], patch_size, patch_size) for i in range(n)]
-
-# Linearize list of patches
-img_patches = np.asarray([img_patches[i][j] for i in range(len(img_patches)) for j in range(len(img_patches[i]))])
-gt_patches =  np.asarray([gt_patches[i][j] for i in range(len(gt_patches)) for j in range(len(gt_patches[i]))])
+img_patches = compute_patches(imgs)
+gt_patches = compute_patches(gt_imgs)
 
 # Compute features for each image patch
 foreground_threshold = 0.25 # percentage of pixels > 1 required to assign a foreground label to a patch
@@ -139,21 +133,15 @@ def value_to_class(v):
     else:
         return 0
 
-X = np.asarray([ extract_features_2d(img_patches[i]) for i in range(len(img_patches))])
-Y = np.asarray([value_to_class(np.mean(gt_patches[i])) for i in range(len(gt_patches))])
+X = np.asarray([extract_features_2d(patch) for patch in img_patches])
+Y = np.asarray([value_to_class(np.mean(patch)) for patch in gt_patches])
 
 print('Computed ' + str(X.shape[0]) + ' features')
 print('Feature dimension = ' + str(X.shape[1]))
-print('Number of classes = ' + str(np.max(Y)))
-
-Y0 = [i for i, j in enumerate(Y) if j == 0]
-Y1 = [i for i, j in enumerate(Y) if j == 1]
-print('Class 0: ' + str(len(Y0)) + ' samples')
-print('Class 1: ' + str(len(Y1)) + ' samples')
-
+print('Number of classes = ' + str(np.max(Y) + 1))
 
 # we create an instance of the classifier and fit the data
-logreg = linear_model.LogisticRegression(C=1e5, class_weight="balanced")
+logreg = linear_model.LogisticRegression(C = 1e5, class_weight = "balanced")
 logreg.fit(X, Y)
 
 # Predict on the training set
@@ -169,7 +157,7 @@ print('True positive rate = ' + str(TPR))
 # Run prediction on the img_idx-th image
 img_idx = 12
 
-Xi = extract_img_features(image_dir + files[img_idx])
+Xi = extract_img_features(imgs[img_idx])
 Zi = logreg.predict(Xi)
 
 w = gt_imgs[img_idx].shape[0]
