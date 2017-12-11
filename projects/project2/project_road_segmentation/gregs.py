@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os,sys
 from PIL import Image
 from sklearn import linear_model
+import extract_features as features
 
 
 # Helper functions
@@ -16,23 +17,23 @@ def img_float_to_uint8(img):
     rimg = img - np.min(img)
     rimg = (rimg / np.max(rimg) * 255).round().astype(np.uint8)
     return rimg
+    
+    
+def to_rgb_img(img):
+    if len(img.shape) == 3:
+        return img
+    
+    w = img.shape[0]
+    h = img.shape[1]
+    img_3c = np.zeros((w, h, 3))          
+    img_3c[:, :, 0] = img
+    img_3c[:, :, 1] = img
+    img_3c[:, :, 2] = img
+    return img_3c
 
 # Concatenate an image and its groundtruth
 def concatenate_images(img, gt_img):
-    nChannels = len(gt_img.shape)
-    w = gt_img.shape[0]
-    h = gt_img.shape[1]
-    if nChannels == 3:
-        cimg = np.concatenate((img, gt_img), axis = 1)
-    else:
-        gt_img_3c = np.zeros((w, h, 3), dtype = np.uint8)
-        gt_img8 = img_float_to_uint8(gt_img)          
-        gt_img_3c[:, :, 0] = gt_img8
-        gt_img_3c[:, :, 1] = gt_img8
-        gt_img_3c[:, :, 2] = gt_img8
-        img8 = img_float_to_uint8(img)
-        cimg = np.concatenate((img8, gt_img_3c), axis = 1)
-    return cimg
+    return np.concatenate((to_rgb_img(img), to_rgb_img(gt_img)), axis = 1)
     
 def into_patches(im):
     list_patches = []
@@ -72,27 +73,14 @@ def into_patches(im):
             list_patches.append(np.asarray(img_patch))
     return list_patches
     
-# Extract 2-dimensional features consisting of average gray color as well as variance
-def extract_features_2d(img):
-    center_patch = img[0]
-    margin_patches = img[1:]
-    
-    center_m = np.mean(center_patch)
-    center_v = np.var(center_patch)
-    
-    if len(margin_patches) == 0:
-        return np.append(center_m, center_v)
-        
-    margin_m = np.mean(margin_patches)
-    margin_v = np.var(margin_patches)
-    
-    return np.array([center_m, center_v, margin_m, margin_v])
-    
+def extract_features(img):
+    return np.array(features.extract_mean_var(img, patch_margin))
+    #return features.extract_delta_to_gray(img)
 
 # Extract features for a given image
 def extract_img_features(img):
     img = into_patches(img)
-    return np.asarray([extract_features_2d(patch) for patch in img])
+    return np.asarray([extract_features(patch) for patch in img])
 
 # Convert array of labels to an image
 def label_to_img(imgwidth, imgheight, w, h, labels):
@@ -127,7 +115,13 @@ def load_training_set(root_dir, max_images = 20):
     imgs    = [load_image(im_dir + files[i]) for i in range(n)]
     gt_imgs = [load_image(gt_dir + files[i]) for i in range(n)]
     cn_imgs = [load_image(cn_dir + files[i]) for i in range(n)]
-
+    
+    for i in range(n):
+        assert(imgs[i].shape[0] == gt_imgs[i].shape[0])
+        assert(imgs[i].shape[1] == gt_imgs[i].shape[1])
+        assert(imgs[i].shape[0] == cn_imgs[i].shape[0])
+        assert(imgs[i].shape[1] == cn_imgs[i].shape[1])
+    
     return (imgs, gt_imgs, cn_imgs)
 
 
@@ -143,8 +137,8 @@ def compute_patches(imgs):
 imgs, gt_imgs, _ = load_training_set("training/")
 
 # Extract patches from input images
-patch_margin = 5
-patch_size = 4
+patch_margin = 1
+patch_size = 16
 
 img_patches = compute_patches(imgs)
 gt_patches = compute_patches(gt_imgs)
@@ -159,11 +153,11 @@ def value_to_class(v):
     else:
         return 0
 
-X = np.asarray([extract_features_2d(patch) for patch in img_patches])
+X = np.asarray([extract_features(patch) for patch in img_patches])
 Y = np.asarray([value_to_class(np.mean(patch)) for patch in gt_patches])
 
 print('Computed ' + str(X.shape[0]) + ' features')
-print('Feature dimension = ' + str(X.shape[1]))
+print('Feature dimension = ' + str(X.shape))
 print('Patch size = ' + str(gt_patches[0].shape))
 print('Number of classes = ' + str(np.max(Y) + 1))
 
@@ -192,5 +186,5 @@ h = gt_imgs[img_idx].shape[1]
 predicted_im = label_to_img(w, h, patch_size, patch_size, Zi)
 cimg = concatenate_images(imgs[img_idx], predicted_im)
 
-new_img = make_img_overlay(imgs[img_idx], predicted_im)
+new_img = make_img_overlay(to_rgb_img(imgs[img_idx]), predicted_im)
 new_img.show()
