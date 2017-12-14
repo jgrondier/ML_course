@@ -19,6 +19,8 @@ def load_training_set(root_dir, max_images = 20):
 
     return imgs, gt_imgs
 
+def to_bool(gray, threshold = 0.75):
+    return gray > threshold
 
 def to_lum(rgb):
     r = rgb[:, :, 0]
