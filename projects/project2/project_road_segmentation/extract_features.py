@@ -1,5 +1,6 @@
 
 import numpy as np
+from skimage import feature
 
 
 
@@ -13,9 +14,20 @@ def to_lum_img(rgb):
     return 0.2989 * r + 0.5870 * g + 0.1140 * b
     
     
+def canny(img, patch_margin):
+    gray = to_lum_img(img[0])
+    cn = feature.canny(gray)
+    return cn.flatten()
+
+def canny_gray(img, patch_margin):
+    gray = to_lum_img(img[0])
+    cn = feature.canny(gray)
+    return (cn + gray).flatten()
     
+def grayscale(img, patch_margin):
+    return to_lum_img(img[0]).flatten()
     
-def extract_mean_var(img, patch_margin):
+def mean_var(img, patch_margin):
     center_patch = img[0]
     margin_patches = img[1:]
     
@@ -30,7 +42,7 @@ def extract_mean_var(img, patch_margin):
     
     return [center_m, center_v, margin_m, margin_v]
     
-def extract_rgb_means(img, patch_margin):
+def rgb_means(img, patch_margin):
     center_patch = img[0]
     margin_patches = img[1:]
     
@@ -43,7 +55,7 @@ def extract_rgb_means(img, patch_margin):
     
     return center_rgb + margin_rgb
     
-def extract_rgb_mean_var(img, patch_margin):
+def rgb_mean_var(img, patch_margin):
     center_patch = img[0]
     margin_patches = img[1:]
     
@@ -59,7 +71,7 @@ def extract_rgb_mean_var(img, patch_margin):
     return center_rgb_m + center_rgb_v + margin_rgb_m + margin_rgb_v
     
     
-def extract_delta_to_gray(img, patch_margin):
+def delta_to_gray(img, patch_margin):
     center_patch = img[0]
     margin_patches = img[1:]
     

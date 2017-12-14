@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import os,sys
 from PIL import Image
 from sklearn import linear_model
-import extract_features as features
+from skimage import feature
+
+import extract_features as extract
 
 
 # Helper functions
@@ -74,7 +76,7 @@ def into_patches(im):
     return list_patches
     
 def extract_features(img):
-    return np.array(features.extract_mean_var(img, patch_margin))
+    return np.array(extract.canny(img, patch_margin))
     #return features.extract_delta_to_gray(img)
 
 # Extract features for a given image
@@ -107,22 +109,22 @@ def make_img_overlay(img, predicted_img):
 def load_training_set(root_dir, max_images = 20):
     im_dir = root_dir + "images/"
     gt_dir = root_dir + "groundtruth/"
-    cn_dir = root_dir + "cannyedges/"
+    #cn_dir = root_dir + "cannyedges/"
     
     files = os.listdir(im_dir)
     n = min(max_images, len(files))
     
     imgs    = [load_image(im_dir + files[i]) for i in range(n)]
     gt_imgs = [load_image(gt_dir + files[i]) for i in range(n)]
-    cn_imgs = [load_image(cn_dir + files[i]) for i in range(n)]
+    #cn_imgs = [load_image(cn_dir + files[i]) for i in range(n)]
     
     for i in range(n):
         assert(imgs[i].shape[0] == gt_imgs[i].shape[0])
         assert(imgs[i].shape[1] == gt_imgs[i].shape[1])
-        assert(imgs[i].shape[0] == cn_imgs[i].shape[0])
-        assert(imgs[i].shape[1] == cn_imgs[i].shape[1])
+        #assert(imgs[i].shape[0] == cn_imgs[i].shape[0])
+        #assert(imgs[i].shape[1] == cn_imgs[i].shape[1])
     
-    return (imgs, gt_imgs, cn_imgs)
+    return (imgs, gt_imgs)
 
 
 def compute_patches(imgs):
@@ -134,11 +136,11 @@ def compute_patches(imgs):
 
 
 # Loaded a set of images
-imgs, gt_imgs, _ = load_training_set("training/")
+imgs, gt_imgs = load_training_set("training/")
 
 # Extract patches from input images
-patch_margin = 1
-patch_size = 16
+patch_margin = 0
+patch_size = 40 
 
 img_patches = compute_patches(imgs)
 gt_patches = compute_patches(gt_imgs)
