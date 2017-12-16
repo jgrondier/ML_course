@@ -23,7 +23,7 @@ NUM_CHANNELS = 3 # RGB images
 PIXEL_DEPTH = 255
 NUM_LABELS = 2
 TRAINING_SIZE = 20
-TEST_SIZE = 5
+TEST_SIZE = 50
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16 # 64
@@ -34,7 +34,7 @@ RECORDING_STEP = 1000
 # Set image patch size in pixels
 # IMG_PATCH_SIZE should be a multiple of 4
 # image size should be an integer multiple of this number!
-IMG_PATCH_SIZE = 16
+IMG_PATCH_SIZE = 4
 
 tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist',
                            """Directory where to write event logs """
@@ -155,6 +155,16 @@ def img_float_to_uint8(img):
     rimg = (rimg / numpy.max(rimg) * PIXEL_DEPTH).round().astype(numpy.uint8)
     return rimg
 
+def prediction_to_rgb(gt_img):
+    w = gt_img.shape[0]
+    h = gt_img.shape[1]
+    gt_img_3c = numpy.zeros((w, h, 3), dtype=numpy.uint8)
+    gt_img8 = img_float_to_uint8(gt_img)          
+    gt_img_3c[:,:,0] = gt_img8
+    gt_img_3c[:,:,1] = gt_img8
+    gt_img_3c[:,:,2] = gt_img8
+    return gt_img_3c
+    
 def concatenate_images(img, gt_img):
     nChannels = len(gt_img.shape)
     w = gt_img.shape[0]
@@ -497,17 +507,20 @@ def main(argv=None):  # pylint: disable=unused-argument
                 print("Model saved in file: %s" % save_path)
 
 
-        print ("Running prediction on training set")
-        prediction_training_dir = "predictions_training/"
-        if not os.path.isdir(prediction_training_dir):
-            os.mkdir(prediction_training_dir)
+        print ("Running prediction on test set")
+        prediction_dir = "predictions/"
+        if not os.path.isdir(prediction_dir):
+            os.mkdir(prediction_dir)
             
         for i in range(1, TEST_SIZE+1):
             image_filename = "test_set_images/test_" + str(i) + "/test_" + str(i) + ".png"
-            pimg = get_prediction_with_groundtruth(image_filename)
-            Image.fromarray(pimg).save(prediction_training_dir + "prediction_" + str(i) + ".png")
+            
+            pimg = get_prediction(mpimg.imread(image_filename))
             oimg = get_prediction_with_overlay(image_filename)
-            oimg.save(prediction_training_dir + "overlay_" + str(i) + ".png")       
+            
+            Image.fromarray(prediction_to_rgb(pimg)).save(prediction_dir + "prediction_" + str(i) + ".png")
+            oimg.save(prediction_dir + "overlay_" + str(i) + ".png")  
+            
         print("DONE")
         
 if __name__ == '__main__':
