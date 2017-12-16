@@ -90,3 +90,7 @@ ENV/
 
 # Mac folder attributes
 .DS_Store
+
+
+projects/project2/project_road_segmentation/predictions/
+*.npy
