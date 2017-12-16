@@ -22,7 +22,7 @@ import tensorflow as tf
 NUM_CHANNELS = 3 # RGB images
 PIXEL_DEPTH = 255
 NUM_LABELS = 2
-TRAINING_SIZE = 20
+TRAINING_SIZE = 100
 TEST_SIZE = 50
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
@@ -149,6 +149,16 @@ def label_to_img(imgwidth, imgheight, w, h, labels):
             array_labels[j:j+w, i:i+h] = l
             idx = idx + 1
     return array_labels
+    
+def label_to_gray(imgwidth, imgheight, w, h, labels):
+    array_labels = numpy.zeros([imgwidth, imgheight])
+    idx = 0
+    for i in range(0,imgheight,h):
+        for j in range(0,imgwidth,w):
+            l = labels[idx][0]
+            array_labels[j:j+w, i:i+h] = l
+            idx = idx + 1
+    return array_labels
 
 def img_float_to_uint8(img):
     rimg = img - numpy.min(img)
@@ -185,12 +195,12 @@ def make_img_overlay(img, predicted_img):
     w = img.shape[0]
     h = img.shape[1]
     color_mask = numpy.zeros((w, h, 3), dtype=numpy.uint8)
-    color_mask[:,:,0] = predicted_img*PIXEL_DEPTH
+    color_mask[:,:,2] = predicted_img*PIXEL_DEPTH
 
     img8 = img_float_to_uint8(img)
     background = Image.fromarray(img8, 'RGB').convert("RGBA")
     overlay = Image.fromarray(color_mask, 'RGB').convert("RGBA")
-    new_img = Image.blend(background, overlay, 0.2)
+    new_img = Image.blend(background, overlay, 0.4)
     return new_img
 
 
@@ -302,7 +312,7 @@ def main(argv=None):  # pylint: disable=unused-argument
         data_node = tf.constant(data)
         output = tf.nn.softmax(model(data_node))
         output_prediction = s.run(output)
-        img_prediction = label_to_img(img.shape[0], img.shape[1], IMG_PATCH_SIZE, IMG_PATCH_SIZE, output_prediction)
+        img_prediction = label_to_gray(img.shape[0], img.shape[1], IMG_PATCH_SIZE, IMG_PATCH_SIZE, output_prediction)
 
         return img_prediction
 
