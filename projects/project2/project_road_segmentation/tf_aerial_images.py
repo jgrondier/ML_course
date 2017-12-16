@@ -85,7 +85,7 @@ def extract_data(filename, num_images):
 def value_to_class(v):
     foreground_threshold = 0.25 # percentage of pixels > 1 required to assign a foreground label to a patch
     df = numpy.sum(v)
-    if df > foreground_threshold:
+    if df < foreground_threshold:
         return [0, 1]
     else:
         return [1, 0]
