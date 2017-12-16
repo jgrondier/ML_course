@@ -5,8 +5,6 @@ This simple baseline consits of a CNN with two convolutional+pooling layers with
 Credits: Aurelien Lucchi, ETH Zürich
 """
 
-
-
 import gzip
 import os
 import sys
@@ -25,6 +23,7 @@ NUM_CHANNELS = 3 # RGB images
 PIXEL_DEPTH = 255
 NUM_LABELS = 2
 TRAINING_SIZE = 20
+TEST_SIZE = 5
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16 # 64
@@ -308,7 +307,6 @@ def main(argv=None):  # pylint: disable=unused-argument
     # Get prediction overlaid on the original image for given input file
     def get_prediction_with_overlay(image_filename):
         img = mpimg.imread(image_filename)
-
         img_prediction = get_prediction(img)
         oimg = make_img_overlay(img, img_prediction)
 
@@ -503,12 +501,16 @@ def main(argv=None):  # pylint: disable=unused-argument
         prediction_training_dir = "predictions_training/"
         if not os.path.isdir(prediction_training_dir):
             os.mkdir(prediction_training_dir)
-        for i in range(1, TRAINING_SIZE+1):
+            
+        for i in range(1, TEST_SIZE+1):
             image_filename = "test_set_images/test_" + str(i) + "/test_" + str(i) + ".png"
             pimg = get_prediction_with_groundtruth(image_filename)
             Image.fromarray(pimg).save(prediction_training_dir + "prediction_" + str(i) + ".png")
             oimg = get_prediction_with_overlay(image_filename)
             oimg.save(prediction_training_dir + "overlay_" + str(i) + ".png")       
-
+        print("DONE")
+        
 if __name__ == '__main__':
+    if "-r" in sys.argv or "--retrain" in sys.argv:
+        RESTORE_MODEL = False
     tf.app.run()
