@@ -29,7 +29,7 @@ VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16 # 64
 NUM_EPOCHS = 5
-RESTORE_MODEL = False # If True, restore existing model instead of training a new one
+RESTORE_MODEL = True # If True, restore existing model instead of training a new one
 RECORDING_STEP = 1000
 
 # Set image patch size in pixels
@@ -298,22 +298,15 @@ def main(argv=None):  # pylint: disable=unused-argument
         return img_prediction
 
     # Get a concatenation of the prediction and groundtruth for given input file
-    def get_prediction_with_groundtruth(filename, image_idx):
-
-        imageid = "satImage_%.3d" % image_idx
-        image_filename = filename + imageid + ".png"
+    def get_prediction_with_groundtruth(image_filename):
         img = mpimg.imread(image_filename)
-
         img_prediction = get_prediction(img)
         cimg = concatenate_images(img, img_prediction)
 
         return cimg
-
+        
     # Get prediction overlaid on the original image for given input file
-    def get_prediction_with_overlay(filename, image_idx):
-
-        imageid = "satImage_%.3d" % image_idx
-        image_filename = filename + imageid + ".png"
+    def get_prediction_with_overlay(image_filename):
         img = mpimg.imread(image_filename)
 
         img_prediction = get_prediction(img)
@@ -511,9 +504,10 @@ def main(argv=None):  # pylint: disable=unused-argument
         if not os.path.isdir(prediction_training_dir):
             os.mkdir(prediction_training_dir)
         for i in range(1, TRAINING_SIZE+1):
-            pimg = get_prediction_with_groundtruth(train_data_filename, i)
+            image_filename = "test_set_images/test_" + str(i) + "/test_" + str(i) + ".png"
+            pimg = get_prediction_with_groundtruth(image_filename)
             Image.fromarray(pimg).save(prediction_training_dir + "prediction_" + str(i) + ".png")
-            oimg = get_prediction_with_overlay(train_data_filename, i)
+            oimg = get_prediction_with_overlay(image_filename)
             oimg.save(prediction_training_dir + "overlay_" + str(i) + ".png")       
 
 if __name__ == '__main__':
