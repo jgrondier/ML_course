@@ -145,43 +145,31 @@ def print_predictions(predictions, labels):
     print (str(max_labels) + ' ' + str(max_predictions))
 
 # Convert array of labels to an image
-def label_to_img(imgwidth, imgheight, w, h, labels):
-    array_labels = numpy.zeros([imgwidth, imgheight])
+def label_to_img(imgwidth, imgheight, w, h, labels, index=1):
+    array_labels = numpy.zeros([imgwidth, imgheight, NUM_LABELS])
     idx = 0
     for i in range(0,imgheight,h):
         for j in range(0,imgwidth,w):
-            if labels[idx][0] > 0.5:
-                l = 1
-            else:
-                l = 0
-            array_labels[j:j+w, i:i+h] = l
+            array_labels[j:j+w, i:i+h] = labels[idx]
             idx = idx + 1
     return array_labels
     
-def label_to_gray(imgwidth, imgheight, w, h, labels, index=1):
+"""def label_to_gray(imgwidth, imgheight, w, h, labels, index=1):
     array_labels = numpy.zeros([imgwidth, imgheight])
     idx = 0
     for i in range(0,imgheight,h):
         for j in range(0,imgwidth,w):
-            l = labels[idx][index]
+            sum = numpy.sum(labels[idx])
+            l = 1.0 if labels[idx][index] * 2 > sum else 0.0
             array_labels[j:j+w, i:i+h] = l
             idx = idx + 1
-    return array_labels
+    return array_labels"""
 
 def img_float_to_uint8(img):
     rimg = img - numpy.min(img)
     rimg = (rimg / numpy.max(rimg) * PIXEL_DEPTH).round().astype(numpy.uint8)
     return rimg
 
-def prediction_to_rgb(gt_img):
-    w = gt_img.shape[0]
-    h = gt_img.shape[1]
-    gt_img_3c = numpy.zeros((w, h, 3), dtype=numpy.uint8)
-    gt_img8 = img_float_to_uint8(gt_img)          
-    gt_img_3c[:,:,0] = gt_img8
-    gt_img_3c[:,:,1] = gt_img8
-    gt_img_3c[:,:,2] = gt_img8
-    return gt_img_3c
     
 def concatenate_images(img, gt_img):
     nChannels = len(gt_img.shape)
@@ -341,8 +329,7 @@ def main(argv=None):  # pylint: disable=unused-argument
         data_node = tf.constant(data)
         output = tf.nn.softmax(model(data_node))
         output_prediction = s.run(output)
-        img_prediction = label_to_gray(img.shape[0], img.shape[1], IMG_PATCH_SIZE, IMG_PATCH_SIZE, output_prediction)
-
+        img_prediction = label_to_img(img.shape[0], img.shape[1], IMG_PATCH_SIZE, IMG_PATCH_SIZE, output_prediction)
         return img_prediction
 
     # Get a concatenation of the prediction and groundtruth for given input file
@@ -354,11 +341,9 @@ def main(argv=None):  # pylint: disable=unused-argument
         return cimg
         
     # Get prediction overlaid on the original image for given input file
-    def get_prediction_with_overlay(image_filename):
+    def get_prediction_with_overlay(image_filename, pimg):
         img = mpimg.imread(image_filename)
-        img_prediction = get_prediction(img)
-        oimg = make_img_overlay(img, img_prediction)
-
+        oimg = make_img_overlay(img, pimg)
         return oimg
 
     # We will replicate the model structure for the training subgraph, as well
@@ -554,13 +539,28 @@ def main(argv=None):  # pylint: disable=unused-argument
         for i in range(1, TEST_SIZE+1):
             image_filename = "test_set_images/test_" + str(i) + "/test_" + str(i) + ".png"
             
+            def prediction_to_mask(img): 
+                return img[:, :, 1]
+                
+                
+            def to_rgb(img):
+                if len(img.shape) == 3:
+                    return img_float_to_uint8(img)
+                g3c = numpy.zeros((img.shape[0], img.shape[1], 3), dtype=numpy.uint8)
+                g8 = img_float_to_uint8(img)          
+                g3c[:,:,0] = g8
+                g3c[:,:,1] = g8
+                g3c[:,:,2] = g8
+                return g3c
+            
             pimg = get_prediction(mpimg.imread(image_filename))
-            oimg = get_prediction_with_overlay(image_filename)
+            pmsk = prediction_to_mask(pimg)
+            oimg = get_prediction_with_overlay(image_filename, pmsk)
             #ppred = post.process(pimg)
             #ppred = numpy.where(ppred > 0.5, 1.0, 0.0)
-            ppred = pimg
-            Image.fromarray(prediction_to_rgb(ppred)).save(prediction_dir + "prediction_" + str(i) + ".png")
-            Image.fromarray(prediction_to_rgb(pimg)).save(prediction_dir + "raw_" + str(i) + ".png")
+            
+            Image.fromarray(to_rgb(pmsk)).save(prediction_dir + "prediction_" + str(i) + ".png")
+            Image.fromarray(to_rgb(pimg)).save(prediction_dir + "raw_" + str(i) + ".png")
             oimg.save(prediction_dir + "overlay_" + str(i) + ".png")  
             
         print("DONE")
