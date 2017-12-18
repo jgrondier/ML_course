@@ -17,13 +17,14 @@ import code
 import tensorflow.python.platform
 
 import numpy
+import post_process as post
 import tensorflow as tf
 
 NUM_CHANNELS = 3 # RGB images
 PIXEL_DEPTH = 255
-NUM_LABELS = 2
-TRAINING_SIZE = 100
-TEST_SIZE = 50
+NUM_LABELS = 3
+TRAINING_SIZE = 20
+TEST_SIZE = 5
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16 # 64
@@ -89,23 +90,30 @@ def value_to_class(v):
         return [0, 1]
     else:
         return [1, 0]
+        
+
 
 # Extract label images
 def extract_labels(filename, num_images):
     """Extract the labels into a 1-hot matrix [image index, label index]."""
+    def img_to_mask(img):
+        if len(img.shape) == 2:
+            return img
+        return img[:,:,0]
+        
     gt_imgs = []
     for i in range(1, num_images+1):
         imageid = "satImage_%.3d" % i
         image_filename = filename + imageid + ".png"
         if os.path.isfile(image_filename):
             print ('Loading ' + image_filename)
-            img = mpimg.imread(image_filename)
+            img = img_to_mask(mpimg.imread(image_filename))
             gt_imgs.append(img)
         else:
             print ('File ' + image_filename + ' does not exist')
 
     num_images = len(gt_imgs)
-    gt_patches = [img_crop(gt_imgs[i], IMG_PATCH_SIZE, IMG_PATCH_SIZE) for i in range(num_images)]
+    gt_patches = numpy.asarray([img_crop(gt_imgs[i], IMG_PATCH_SIZE, IMG_PATCH_SIZE) for i in range(num_images)])
     data = numpy.asarray([gt_patches[i][j] for i in range(len(gt_patches)) for j in range(len(gt_patches[i]))])
     labels = numpy.asarray([value_to_class(numpy.mean(data[i])) for i in range(len(data))])
 
@@ -150,12 +158,12 @@ def label_to_img(imgwidth, imgheight, w, h, labels):
             idx = idx + 1
     return array_labels
     
-def label_to_gray(imgwidth, imgheight, w, h, labels):
+def label_to_gray(imgwidth, imgheight, w, h, labels, index=1):
     array_labels = numpy.zeros([imgwidth, imgheight])
     idx = 0
     for i in range(0,imgheight,h):
         for j in range(0,imgwidth,w):
-            l = labels[idx][0]
+            l = labels[idx][index]
             array_labels[j:j+w, i:i+h] = l
             idx = idx + 1
     return array_labels
@@ -195,12 +203,12 @@ def make_img_overlay(img, predicted_img):
     w = img.shape[0]
     h = img.shape[1]
     color_mask = numpy.zeros((w, h, 3), dtype=numpy.uint8)
-    color_mask[:,:,2] = predicted_img*PIXEL_DEPTH
+    color_mask[:,:,1] = predicted_img*PIXEL_DEPTH
 
     img8 = img_float_to_uint8(img)
     background = Image.fromarray(img8, 'RGB').convert("RGBA")
     overlay = Image.fromarray(color_mask, 'RGB').convert("RGBA")
-    new_img = Image.blend(background, overlay, 0.4)
+    new_img = Image.blend(background, overlay, 0.2)
     return new_img
 
 
@@ -209,43 +217,64 @@ def main(argv=None):  # pylint: disable=unused-argument
     data_dir = 'training/'
     train_data_filename = data_dir + 'images/'
     train_labels_filename = data_dir + 'groundtruth/' 
+    train_house_labels_filename = data_dir + 'housetruth/' 
 
     # Extract it into numpy arrays.
     train_data = extract_data(train_data_filename, TRAINING_SIZE)
     train_labels = extract_labels(train_labels_filename, TRAINING_SIZE)
+    train_house_labels = extract_labels(train_house_labels_filename, TRAINING_SIZE)
+    
+    nothing = train_labels[:, 1]
+    road = train_labels[:, 0]
+    house = train_house_labels[:, 0]
+    house[road > 0] = 0
+    nothing[house > 0] = 0
+    print("nothing = ", nothing)
+    print("road = ", road)
+    print("house = ", house)
+    train_labels = numpy.zeros((len(road), 3))
+    train_labels[:, 0] = nothing
+    train_labels[:, 1] = road
+    train_labels[:, 2] = house
 
     num_epochs = NUM_EPOCHS
 
     c0 = 0
     c1 = 0
+    c2 = 0
     for i in range(len(train_labels)):
         if train_labels[i][0] == 1:
             c0 = c0 + 1
-        else:
+        elif train_labels[i][1] == 1:
             c1 = c1 + 1
-    print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
+        else:
+            c2 = c2 + 1
+    print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1) + ' c2 = ' + str(c2))
 
     print ('Balancing training data...')
-    min_c = min(c0, c1)
+    min_c = min(c0, c1, c2)
     idx0 = [i for i, j in enumerate(train_labels) if j[0] == 1]
     idx1 = [i for i, j in enumerate(train_labels) if j[1] == 1]
-    new_indices = idx0[0:min_c] + idx1[0:min_c]
+    idx2 = [i for i, j in enumerate(train_labels) if j[2] == 1]
+    new_indices = idx0[0:min_c] + idx1[0:min_c] + idx2[0:min_c]
     print (len(new_indices))
     print (train_data.shape)
     train_data = train_data[new_indices,:,:,:]
     train_labels = train_labels[new_indices]
 
-
     train_size = train_labels.shape[0]
 
     c0 = 0
     c1 = 0
+    c2 = 0
     for i in range(len(train_labels)):
         if train_labels[i][0] == 1:
             c0 = c0 + 1
-        else:
+        elif train_labels[i][1] == 1:
             c1 = c1 + 1
-    print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
+        else:
+            c2 = c2 + 1
+    print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1) + ' c2 = ' + str(c2))
 
 
     # This is where training samples and labels are fed to the graph.
@@ -527,8 +556,11 @@ def main(argv=None):  # pylint: disable=unused-argument
             
             pimg = get_prediction(mpimg.imread(image_filename))
             oimg = get_prediction_with_overlay(image_filename)
-            
-            Image.fromarray(prediction_to_rgb(pimg)).save(prediction_dir + "prediction_" + str(i) + ".png")
+            #ppred = post.process(pimg)
+            #ppred = numpy.where(ppred > 0.5, 1.0, 0.0)
+            ppred = pimg
+            Image.fromarray(prediction_to_rgb(ppred)).save(prediction_dir + "prediction_" + str(i) + ".png")
+            Image.fromarray(prediction_to_rgb(pimg)).save(prediction_dir + "raw_" + str(i) + ".png")
             oimg.save(prediction_dir + "overlay_" + str(i) + ".png")  
             
         print("DONE")
