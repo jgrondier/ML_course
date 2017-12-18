@@ -17,9 +17,10 @@ import code
 import tensorflow.python.platform
 
 import numpy
-import post_process as post
+import post_process
 import tensorflow as tf
 
+BALANCE_CLASSES = True
 NUM_CHANNELS = 3 # RGB images
 PIXEL_DEPTH = 255
 NUM_LABELS = 3
@@ -227,28 +228,29 @@ def main(argv=None):  # pylint: disable=unused-argument
 
     num_epochs = NUM_EPOCHS
 
-    c0 = 0
-    c1 = 0
-    c2 = 0
-    for i in range(len(train_labels)):
-        if train_labels[i][0] == 1:
-            c0 = c0 + 1
-        elif train_labels[i][1] == 1:
-            c1 = c1 + 1
-        else:
-            c2 = c2 + 1
-    print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1) + ' c2 = ' + str(c2))
+    if BALANCE_CLASSES:
+        c0 = 0
+        c1 = 0
+        c2 = 0
+        for i in range(len(train_labels)):
+            if train_labels[i][0] == 1:
+                c0 = c0 + 1
+            if train_labels[i][1] == 1:
+                c1 = c1 + 1
+            if train_labels[i][2] == 1:
+                c2 = c2 + 1
+        print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1) + ' c2 = ' + str(c2))
 
-    print ('Balancing training data...')
-    min_c = min(c0, c1, c2)
-    idx0 = [i for i, j in enumerate(train_labels) if j[0] == 1]
-    idx1 = [i for i, j in enumerate(train_labels) if j[1] == 1]
-    idx2 = [i for i, j in enumerate(train_labels) if j[2] == 1]
-    new_indices = idx0[0:min_c] + idx1[0:min_c] + idx2[0:min_c]
-    print (len(new_indices))
-    print (train_data.shape)
-    train_data = train_data[new_indices,:,:,:]
-    train_labels = train_labels[new_indices]
+        print ('Balancing training data...')
+        min_c = min(c0, c1, c2)
+        idx0 = [i for i, j in enumerate(train_labels) if j[0] == 1]
+        idx1 = [i for i, j in enumerate(train_labels) if j[1] == 1]
+        idx2 = [i for i, j in enumerate(train_labels) if j[2] == 1]
+        new_indices = idx0[0:min_c] + idx1[0:min_c] + idx2[0:min_c]
+        print (len(new_indices))
+        print (train_data.shape)
+        train_data = train_data[new_indices,:,:,:]
+        train_labels = train_labels[new_indices]
 
     train_size = train_labels.shape[0]
 
@@ -258,9 +260,9 @@ def main(argv=None):  # pylint: disable=unused-argument
     for i in range(len(train_labels)):
         if train_labels[i][0] == 1:
             c0 = c0 + 1
-        elif train_labels[i][1] == 1:
+        if train_labels[i][1] == 1:
             c1 = c1 + 1
-        else:
+        if train_labels[i][2] == 1:
             c2 = c2 + 1
     print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1) + ' c2 = ' + str(c2))
 
@@ -539,8 +541,12 @@ def main(argv=None):  # pylint: disable=unused-argument
         for i in range(1, TEST_SIZE+1):
             image_filename = "test_set_images/test_" + str(i) + "/test_" + str(i) + ".png"
             
-            def prediction_to_mask(img): 
-                return img[:, :, 1]
+            def prediction_to_mask(img):
+                house = img[:, :, 2]
+                road = img[:, :, 1]
+                diff = road - house
+                diff[diff < 0] = 0
+                return diff
                 
                 
             def to_rgb(img):
@@ -554,14 +560,18 @@ def main(argv=None):  # pylint: disable=unused-argument
                 return g3c
             
             pimg = get_prediction(mpimg.imread(image_filename))
-            pmsk = prediction_to_mask(pimg)
-            oimg = get_prediction_with_overlay(image_filename, pmsk)
-            #ppred = post.process(pimg)
-            #ppred = numpy.where(ppred > 0.5, 1.0, 0.0)
+            pred = prediction_to_mask(pimg)
             
-            Image.fromarray(to_rgb(pmsk)).save(prediction_dir + "prediction_" + str(i) + ".png")
-            Image.fromarray(to_rgb(pimg)).save(prediction_dir + "raw_" + str(i) + ".png")
-            oimg.save(prediction_dir + "overlay_" + str(i) + ".png")  
+            post = post_process.process(pred)
+            mask = numpy.where(post > 0.5, 1.0, 0.0)
+            
+            oimg = get_prediction_with_overlay(image_filename, mask)
+            
+            Image.fromarray(to_rgb(pred)).save(prediction_dir + str(i) + "_prediction.png")
+            Image.fromarray(to_rgb(post)).save(prediction_dir + str(i) + "_post.png")
+            Image.fromarray(to_rgb(mask)).save(prediction_dir + str(i) + "_final_mask.png")
+            Image.fromarray(to_rgb(pimg)).save(prediction_dir + str(i) + "_raw.png")
+            oimg.save(prediction_dir + str(i) + "_overlay.png")  
             
         print("DONE")
         
