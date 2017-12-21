@@ -1,3 +1,3 @@
-1- From a conda environment with tensorflow installed, run run.py from its directory. The training folder should be in the same folder.
+1- From a conda environment with tensorflow installed, run run.py from its directory. The training set should be in the "training" subfolder, and the tesst set should be in the "test_set_images" subfolder.
 2- It should take about 15 to 20 minutes to train the model and learn
-3- The mask will be available in the prediction folder
+3- The masks will be available in the prediction folder
