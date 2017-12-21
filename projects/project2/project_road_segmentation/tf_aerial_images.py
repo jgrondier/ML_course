@@ -281,13 +281,14 @@ def main(argv=None):  # pylint: disable=unused-argument
     # The variables below hold all the trainable weights. They are passed an
     # initial value which will be assigned when when we call:
     # {tf.initialize_all_variables().run()}
+    filter_size = 4
     conv1_weights = tf.Variable(
-        tf.truncated_normal([5, 5, NUM_CHANNELS, 32],  # 5x5 filter, depth 32.
+        tf.truncated_normal([filter_size, filter_size, NUM_CHANNELS, 32],  # 5x5 filter, depth 32.
                             stddev=0.1,
                             seed=SEED))
     conv1_biases = tf.Variable(tf.zeros([32]))
     conv2_weights = tf.Variable(
-        tf.truncated_normal([5, 5, 32, 64],
+        tf.truncated_normal([filter_size, filter_size, 32, 64],
                             stddev=0.1,
                             seed=SEED))
     conv2_biases = tf.Variable(tf.constant(0.1, shape=[64]))
@@ -563,16 +564,17 @@ def main(argv=None):  # pylint: disable=unused-argument
                 g3c[:,:,2] = g8
                 return g3c
 
+            threshold = 0.55
             pimg = get_prediction(mpimg.imread(image_filename))
             pred = prediction_to_mask(pimg)
 
             post = post_process.process(pred, IMG_PATCH_SIZE)
-            mask = numpy.where(post > 0.5, 1.0, 0.0)
+            mask = numpy.where(post > threshold, 1.0, 0.0)
 
             oimg = get_prediction_with_overlay(image_filename, mask)
 
             Image.fromarray(to_rgb(pred)).save(prediction_dir + str(i) + "_prediction.png")
-            Image.fromarray(to_rgb(numpy.where(pred > 0.5, 1.0, 0.0))).save(prediction_dir + str(i) + "_first_mask.png")
+            Image.fromarray(to_rgb(numpy.where(pred > threshold, 1.0, 0.0))).save(prediction_dir + str(i) + "_first_mask.png")
             Image.fromarray(to_rgb(post)).save(prediction_dir + str(i) + "_post.png")
             Image.fromarray(to_rgb(mask)).save(prediction_dir + str(i) + "_final_mask.png")
             Image.fromarray(to_rgb(pimg)).save(prediction_dir + str(i) + "_raw.png")
