@@ -63,16 +63,24 @@ Furthermore, we tried adding a new label as groundtruth, manually annotated, cor
 \section{Results post-processing}
 After obtaining the raw prediction from the convolutional neural network, we do a post-processing step in order to remove most of the noise.
 
-The post processing consists of a convolution, using a cross shaped kernel. This shape has be chosen to match the many right angle intersections present in our dataset.
+The post processing consists of a series of two convolutions.
 
-
+The first one has been designed to fill single patches holes in the prediction.
+The final one uses a cross shaped kernel. This shape has be chosen to match the many right angle intersections present in our dataset.
 In some cases the roads are not aligned to the image axes, to handle those we extract the most significant straight lines from the image using Hough transform and rotate our kernel to match their orientation.
+
+These convolutions reduce the noise significantly. We tried to improve the result further by discarding small unconnected patches from the final mask. While this reduced the false positive amount by removing  a few roofs, it did also discard small roads leading to a slightly worst prediction overall.
+
+The result composed of 4x4 blocks is converted to the required 16x16 blocks by \texttt{mask\_to\_submission.py} which simply takes all blocks which mean value is greater than 0.5.
 
 \begin{figure}[h]
 \includegraphics[width=0.5\textwidth]{conv.png}
 \caption{Prediction convolution}
-\includegraphics[width=0.5\textwidth]{50_final_mask.png}
-\caption{After thresholding}
+\end{figure}
+
+\begin{figure}[h]
+\includegraphics[width=0.5\textwidth]{final.png}
+\caption{Prediction before post processing, prediction after post processing, final prediction overlaid on the original image}
 \end{figure}
 
 \section{Discussion}
