@@ -62,18 +62,20 @@ def keep_connected(img):
             
     return out
 
-    
+
 def process(a, patch_size):
+    USE_SINGLE_ANGLE = True
 
     # extract image orientation
-    c = morphology.skeletonize(a > 0.5)#feature.canny(a, sigma = 5.0)
+    # c = morphology.skeletonize(a > 0.5)
+    c = feature.canny(a, sigma = 5.0)
     h = transform.hough_line(c)[0]
     
-    # old way
-        #coords = np.unravel_index(h.argmax(), h.shape)
-        #angle = coords[1]
-    
-    angles = peak_angles(h)
+    if USE_SINGLE_ANGLE:
+        coords = np.unravel_index(h.argmax(), h.shape)
+        angle = coords[1]
+    else:
+        angles = peak_angles(h)
 
     # main kernel size
     size = 7
@@ -92,20 +94,26 @@ def process(a, patch_size):
     d = fill(d)
     
     # convolution
-    b = ndimage.convolve(d, kernel)
-    for a in angles:
-        print("using rotated kernel:", str(a) + "°")
-        rot = ndimage.rotate(kernel, -a)
-        b = b + ndimage.convolve(d, rot)
-        
-
-    b /= kernel.sum() * (len(angles) + 1)
     
+    if USE_SINGLE_ANGLE:
+        rot = ndimage.rotate(kernel, -angle)
+        b = ndimage.convolve(d, rot)
+        b /= kernel.sum()
+    else:
+        b = ndimage.convolve(d, kernel)
+        for a in angles:
+            print("using rotated kernel:", str(a) + "°")
+            rot = ndimage.rotate(kernel, -a)
+            b = b + ndimage.convolve(d, rot)
+            
+
+        b /= kernel.sum() * (len(angles) + 1)
+    
+        
     #b = ndimage.convolve(morphology.skeletonize(b > 0.5), np.ones((4, 4)))
     
     # remove small island
     #b = keep_connected(b)
-    
     
     # upscale back to size
     return upscale(b, patch_size)
