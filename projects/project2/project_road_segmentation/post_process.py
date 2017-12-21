@@ -25,18 +25,31 @@ def upscale(img, factor):
 
     
 def process(a, patch_size):
+    # extract image orientation
     c = feature.canny(a, sigma = 5.0)
     h = transform.hough_line(c)[0]
     io.imshow(normalized(h))
     coords = np.unravel_index(h.argmax(), h.shape)
+    h[coords] = -h[coords]
     angle = coords[1]
+    
+    coords2 = np.unravel_index(h.argmax(), h.shape)
+    print(coords, coords2)
 
-    kernel = np.zeros((101, 101))
-    mid = int(kernel.shape[0] // 2.0)
+    # main kernel size
+    size = 101
+    mid = int(size // 2.0)
+    
+    # create kernel
+    kernel = np.zeros((size, size))
     kernel[mid, :] = kernel[:, mid] = 1
-    kernel /= np.sum(kernel)
+    kernel /= size
+    kernel[mid, mid] = 1
+    
+    # orient kernel to match image
     kernel = ndimage.rotate(kernel, -angle)
 
+    # convolution
     b = ndimage.convolve(downscale(a, patch_size), kernel)
     b = normalized(b)
    

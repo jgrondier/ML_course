@@ -572,6 +572,7 @@ def main(argv=None):  # pylint: disable=unused-argument
             oimg = get_prediction_with_overlay(image_filename, mask)
 
             Image.fromarray(to_rgb(pred)).save(prediction_dir + str(i) + "_prediction.png")
+            Image.fromarray(to_rgb(numpy.where(pred > 0.5, 1.0, 0.0))).save(prediction_dir + str(i) + "_first_mask.png")
             Image.fromarray(to_rgb(post)).save(prediction_dir + str(i) + "_post.png")
             Image.fromarray(to_rgb(mask)).save(prediction_dir + str(i) + "_final_mask.png")
             Image.fromarray(to_rgb(pimg)).save(prediction_dir + str(i) + "_raw.png")
