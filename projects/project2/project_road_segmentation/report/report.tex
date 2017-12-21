@@ -1,0 +1,53 @@
+\documentclass[11pt,conference,compsocconf]{IEEEtran}
+
+\usepackage{hyperref}
+\usepackage{graphicx}	% For figure environment
+\usepackage[english]{babel}
+\usepackage{tabu}
+\usepackage{xargs}  
+\usepackage[prependcaption,textsize=tiny]{todonotes}
+\presetkeys{todonotes}{inline,backgroundcolor=red}{}
+
+
+\begin{document}
+\title{Class Project 2 Report: Road Segmentation Challenge}
+
+\author{
+  Angerand Gr\'egoire, Goullet Boris, Grondier Julien 
+}
+
+\maketitle
+
+\begin{abstract}
+In this project, we were given a dataset consisting of aerial photographs of suburban areas. Our task was to apply different machine learning methods to this dataset to train a model that would predict where roads were present in these photographs.
+
+\todo{summarize results}
+\end{abstract}
+
+\section{Exploratory Data Analysis}
+\todo{kill me pls}
+
+\subsection{Feature processing}
+Wee tried adding house labels, but didn't help
+
+\section{Models applied}
+
+\subsection{Logistic regression}
+We tried to do logreg but was shit.
+
+\subsection{Convolutional Neural Network}
+Started off by using the given tensorflow network
+
+
+
+\section{Results post-processing}
+Fill holes.
+
+use canny+Hough to find major axis, rotate a cross-shaped kernel to align it, then convolve
+
+\section{Discussion}
+
+
+\section{Summary}
+
+\end{document}
