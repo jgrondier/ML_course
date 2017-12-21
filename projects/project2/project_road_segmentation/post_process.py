@@ -8,6 +8,7 @@ from scipy import ndimage
 from skimage import io
 from skimage import feature
 from skimage import transform
+import scipy.ndimage.filters as filters
 
 
 def normalized(img):
@@ -23,34 +24,58 @@ def upscale(img, factor):
     b = img.repeat(factor, axis=0)
     return b.repeat(factor, axis=1)
 
+
+def peak_angles(data):
+    def best(angles):
+        if len(angles):
+            best = max([np.abs(45 - a) for a in angles])
+            return [a for a in angles if np.abs(45 - a) == best]
+        return []
+    maxes = np.max(data, axis=0)
+    bests = np.unique(maxes)[-7:]
+    angles = [i for i, v in enumerate(maxes) if v in bests]
+    return best([a % 90 for a in angles if 10 < a % 90 < 80])
+    
+
+def fill(a):
+    kernel = np.array([[0.0 , 0.25, 0.0 ],
+                       [0.25, 0.0 , 0.25],
+                       [0.0 , 0.25, 0.0 ]])
+    return ndimage.convolve(a, kernel)
+
     
 def process(a, patch_size):
     # extract image orientation
     c = feature.canny(a, sigma = 5.0)
     h = transform.hough_line(c)[0]
-    io.imshow(normalized(h))
-    coords = np.unravel_index(h.argmax(), h.shape)
-    h[coords] = -h[coords]
-    angle = coords[1]
+    #coords = np.unravel_index(h.argmax(), h.shape)
+    #angle = coords[1]
     
-    coords2 = np.unravel_index(h.argmax(), h.shape)
-    print(coords, coords2)
+    angles = peak_angles(h)
 
     # main kernel size
-    size = 101
+    size = 7
     mid = int(size // 2.0)
     
-    # create kernel
+    # create + kernel
     kernel = np.zeros((size, size))
     kernel[mid, :] = kernel[:, mid] = 1
     kernel /= size
-    kernel[mid, mid] = 1
+    kernel[mid, mid] = 1  
     
-    # orient kernel to match image
-    kernel = ndimage.rotate(kernel, -angle)
-
+    # downscale to 1 pixel per patch
+    d = downscale(a, patch_size)
+    
+    
     # convolution
-    b = ndimage.convolve(downscale(a, patch_size), kernel)
-    b = normalized(b)
+    b = ndimage.convolve(d, kernel)
+    for a in angles:
+        print("using rotated kernel:", str(a) + "°")
+        rot = ndimage.rotate(kernel, -a)
+        b = b + ndimage.convolve(d, rot)
+        
+
+    b /= kernel.sum() * (len(angles) + 1)
    
+    # upscale back to size
     return upscale(b, patch_size)
