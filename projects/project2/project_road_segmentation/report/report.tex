@@ -24,20 +24,25 @@ In this project, we were given a dataset consisting of aerial photographs of sub
 \todo{summarize results}
 \end{abstract}
 
-\section{Exploratory Data Analysis}
-\todo{kill me pls}
-
-\subsection{Feature processing}
-Wee tried adding house labels, but didn't help
 
 \section{Models applied}
 
 \subsection{Logistic regression}
-We tried to do logreg but was shit.
+At first, we tried using a logistic regression. We did this by cutting up the images into small patches (either 4x4, 8x8, or 16x16) and training a logist model on 3 features for that patch: mean Red pixels values, mean Green pixel values, and mean Blue pixel values.
+
+However, results were less than satisfactory, even with more/different features or patch sizes, so we quickly dropped that idea.
 
 \subsection{Convolutional Neural Network}
 Started off by using the given tensorflow network
 
+\subsubsection{Custom CNN classifier}
+
+
+\section{Feature processing}
+
+We tried adding house labels, but didn't help.
+
+We train on 500 images instead of 100: the extra 400 were transposed, flipped each side and both at the same time.
 
 
 \section{Results post-processing}
