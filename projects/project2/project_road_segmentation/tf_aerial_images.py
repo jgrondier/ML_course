@@ -552,7 +552,10 @@ def main(argv=None):  # pylint: disable=unused-argument
 
             def to_rgb(img):
                 if len(img.shape) == 3:
-                    return img_float_to_uint8(img)
+                    g3c = numpy.zeros((img.shape[0], img.shape[1], 3), dtype=numpy.uint8)
+                    for i in range(0, NUM_LABELS):
+                        g3c[:,:,i] = img_float_to_uint8(img[:,:,i])
+                    return g3c
                 g3c = numpy.zeros((img.shape[0], img.shape[1], 3), dtype=numpy.uint8)
                 g8 = img_float_to_uint8(img)
                 g3c[:,:,0] = g8
