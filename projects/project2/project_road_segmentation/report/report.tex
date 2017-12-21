@@ -5,6 +5,7 @@
 \usepackage[english]{babel}
 \usepackage{tabu}
 \usepackage{xargs}  
+\usepackage{float}
 \usepackage[prependcaption,textsize=tiny]{todonotes}
 \presetkeys{todonotes}{inline,backgroundcolor=red}{}
 
@@ -36,13 +37,23 @@ However, results were less than satisfactory, even with more/different features 
 Started off by using the given tensorflow network
 
 \subsubsection{Custom CNN classifier}
+We tried building our own Convolution Neural Network rather than using the provided one, for better modularity. We were aiming for the following architecture: 
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth,height=0.5\textheight,keepaspectratio]{custom_CNN.pdf}
+\caption{Architecture of our attempted custom CNN}
+\end{figure}
 
-\section{Feature processing}
+However, after a lot of debugging, we failed to achieve anything and had to fallback on the provided file. The code can be checked in custom\_classifier.py
 
-We tried adding house labels, but didn't help.
+\section{Feature pre-processing}
 
-We train on 500 images instead of 100: the extra 400 were transposed, flipped each side and both at the same time.
+Our CNN works on sub-patches of 4x4x3 (RGB) of the training images with labels from the corresponding ``groundtruth'' patch.
+
+We train the CNN by cutting up 500 different source images: the 100 given as a dataset, plus variations of those (transposed, flipped horizontally, flipped vertically, and flipped both vertically and horizontally).
+
+Furthermore, we tried adding a new label as groundtruth, manually annotated, corresponding the the position of roofs. However, this did not improve prediction rate compared to having only `background' and `road' as labels.
 
 
 \section{Results post-processing}
@@ -57,5 +68,6 @@ In some cases the roads are not aligned to the image axes, to handle those we ex
 
 
 \section{Summary}
+While we had high hopes for using a custom CNN architecture, we are disappointed that we weren't able to build a functional one. However, using the basic, provided CNN, we achieved results that we would deem satisfactory
 
 \end{document}
