@@ -8,6 +8,7 @@ from scipy import ndimage
 from skimage import io
 from skimage import feature
 from skimage import transform
+import skimage.morphology as morphology
 import scipy.ndimage.filters as filters
 
 
@@ -42,14 +43,30 @@ def fill(a):
                        [0.25, 0.0 , 0.25],
                        [0.0 , 0.25, 0.0 ]])
     return ndimage.convolve(a, kernel)
+    
+def keep_connected(img):
+    mat = np.where(img > 0.5, 1, 0)
+    labels, count = morphology.label(mat, connectivity=2, return_num=True)
+    
+    best = None
+    best_score = 0
+    for i in range(count):
+        score = (labels == (i + 1)).sum()
+        if score > best_score:
+            best_score = score
+            best = i
+            
+    return np.where(labels == (best + 1), 1.0, 0.0)
 
     
 def process(a, patch_size):
     # extract image orientation
-    c = feature.canny(a, sigma = 5.0)
+    c = morphology.skeletonize(a > 0.5)#feature.canny(a, sigma = 5.0)
     h = transform.hough_line(c)[0]
-    #coords = np.unravel_index(h.argmax(), h.shape)
-    #angle = coords[1]
+    
+    # old way
+        #coords = np.unravel_index(h.argmax(), h.shape)
+        #angle = coords[1]
     
     angles = peak_angles(h)
 
@@ -59,13 +76,15 @@ def process(a, patch_size):
     
     # create + kernel
     kernel = np.zeros((size, size))
-    kernel[mid, :] = kernel[:, mid] = 1
+    kernel[mid, :] = 1
+    kernel[:, mid] = 1
     kernel /= size
     kernel[mid, mid] = 1  
     
     # downscale to 1 pixel per patch
     d = downscale(a, patch_size)
     
+    d = fill(d)
     
     # convolution
     b = ndimage.convolve(d, kernel)
@@ -76,6 +95,8 @@ def process(a, patch_size):
         
 
     b /= kernel.sum() * (len(angles) + 1)
+    
+    #b = ndimage.convolve(morphology.skeletonize(b > 0.5), np.ones((3, 3)))
    
     # upscale back to size
     return upscale(b, patch_size)
