@@ -15,13 +15,16 @@ def normalized(img):
     return img / np.max(img)
 
 
-def process(a):
 
-    tmp = a < 0.5
+def downscale(img, factor):
+    return img[::factor, ::factor]
 
-    tmp = ndimage.binary_fill_holes(tmp, structure=np.ones((4,4)))
+def upscale(img, factor):
+    b = img.repeat(factor, axis=0)
+    return b.repeat(factor, axis=1)
 
-    return a
+    
+def process(a, patch_size):
     c = feature.canny(a, sigma = 5.0)
     h = transform.hough_line(c)[0]
     io.imshow(normalized(h))
@@ -34,7 +37,7 @@ def process(a):
     kernel /= np.sum(kernel)
     kernel = ndimage.rotate(kernel, -angle)
 
-    b = ndimage.convolve(a, kernel)
+    b = ndimage.convolve(downscale(a, patch_size), kernel)
     b = normalized(b)
-
-    return b
+   
+    return upscale(b, patch_size)

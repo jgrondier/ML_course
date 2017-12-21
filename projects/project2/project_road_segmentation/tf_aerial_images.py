@@ -566,7 +566,7 @@ def main(argv=None):  # pylint: disable=unused-argument
             pimg = get_prediction(mpimg.imread(image_filename))
             pred = prediction_to_mask(pimg)
 
-            post = post_process.process(pred)
+            post = post_process.process(pred, IMG_PATCH_SIZE)
             mask = numpy.where(post > 0.5, 1.0, 0.0)
 
             oimg = get_prediction_with_overlay(image_filename, mask)
