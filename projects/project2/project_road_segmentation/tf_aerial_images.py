@@ -23,14 +23,14 @@ import tensorflow as tf
 BALANCE_CLASSES = True
 NUM_CHANNELS = 3 # RGB images
 PIXEL_DEPTH = 255
-NUM_LABELS = 3
+NUM_LABELS = 2
 TRAINING_SIZE = 20
 TEST_SIZE = 5
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
-BATCH_SIZE = 16 # 64
+BATCH_SIZE = 64 # 64
 NUM_EPOCHS = 5
-RESTORE_MODEL = True # If True, restore existing model instead of training a new one
+RESTORE_MODEL = False # If True, restore existing model instead of training a new one
 RECORDING_STEP = 1000
 
 # Set image patch size in pixels
@@ -82,7 +82,7 @@ def extract_data(filename, num_images):
     data = [img_patches[i][j] for i in range(len(img_patches)) for j in range(len(img_patches[i]))]
 
     return numpy.asarray(data)
-        
+
 # Assign a label to a patch v
 def value_to_class(v):
     foreground_threshold = 0.25 # percentage of pixels > 1 required to assign a foreground label to a patch
@@ -91,7 +91,7 @@ def value_to_class(v):
         return [0, 1]
     else:
         return [1, 0]
-        
+
 
 
 # Extract label images
@@ -101,7 +101,7 @@ def extract_labels(filename, num_images):
         if len(img.shape) == 2:
             return img
         return img[:,:,0]
-        
+
     gt_imgs = []
     for i in range(1, num_images+1):
         imageid = "satImage_%.3d" % i
@@ -154,7 +154,7 @@ def label_to_img(imgwidth, imgheight, w, h, labels, index=1):
             array_labels[j:j+w, i:i+h] = labels[idx]
             idx = idx + 1
     return array_labels
-    
+
 """def label_to_gray(imgwidth, imgheight, w, h, labels, index=1):
     array_labels = numpy.zeros([imgwidth, imgheight])
     idx = 0
@@ -171,7 +171,7 @@ def img_float_to_uint8(img):
     rimg = (rimg / numpy.max(rimg) * PIXEL_DEPTH).round().astype(numpy.uint8)
     return rimg
 
-    
+
 def concatenate_images(img, gt_img):
     nChannels = len(gt_img.shape)
     w = gt_img.shape[0]
@@ -180,7 +180,7 @@ def concatenate_images(img, gt_img):
         cimg = numpy.concatenate((img, gt_img), axis=1)
     else:
         gt_img_3c = numpy.zeros((w, h, 3), dtype=numpy.uint8)
-        gt_img8 = img_float_to_uint8(gt_img)          
+        gt_img8 = img_float_to_uint8(gt_img)
         gt_img_3c[:,:,0] = gt_img8
         gt_img_3c[:,:,1] = gt_img8
         gt_img_3c[:,:,2] = gt_img8
@@ -205,48 +205,49 @@ def main(argv=None):  # pylint: disable=unused-argument
 
     data_dir = 'training/'
     train_data_filename = data_dir + 'images/'
-    train_labels_filename = data_dir + 'groundtruth/' 
-    train_house_labels_filename = data_dir + 'housetruth/' 
+    train_labels_filename = data_dir + 'groundtruth/'
+    #train_house_labels_filename = data_dir + 'housetruth/'
 
     # Extract it into numpy arrays.
     train_data = extract_data(train_data_filename, TRAINING_SIZE)
     train_labels = extract_labels(train_labels_filename, TRAINING_SIZE)
-    train_house_labels = extract_labels(train_house_labels_filename, TRAINING_SIZE)
-    
+    #train_house_labels = extract_labels(train_house_labels_filename, TRAINING_SIZE)
+
     nothing = train_labels[:, 1]
     road = train_labels[:, 0]
-    house = train_house_labels[:, 0]
-    house[road > 0] = 0
-    nothing[house > 0] = 0
+    #house = train_house_labels[:, 0]
+    #house[road > 0] = 0
+    #nothing[house > 0] = 0
     print("nothing = ", nothing)
     print("road = ", road)
-    print("house = ", house)
-    train_labels = numpy.zeros((len(road), 3))
+    #print("house = ", house)
+    train_labels = numpy.zeros((len(road), NUM_LABELS))
     train_labels[:, 0] = nothing
     train_labels[:, 1] = road
-    train_labels[:, 2] = house
+    #train_labels[:, 2] = house
 
     num_epochs = NUM_EPOCHS
 
     if BALANCE_CLASSES:
         c0 = 0
         c1 = 0
-        c2 = 0
+        #c2 = 0
         for i in range(len(train_labels)):
             if train_labels[i][0] == 1:
                 c0 = c0 + 1
             if train_labels[i][1] == 1:
                 c1 = c1 + 1
-            if train_labels[i][2] == 1:
-                c2 = c2 + 1
-        print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1) + ' c2 = ' + str(c2))
+            #if train_labels[i][2] == 1:
+                #c2 = c2 + 1
+        print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1)) # + ' c2 = ' + str(c2))
 
         print ('Balancing training data...')
-        min_c = min(c0, c1, c2)
+        #min_c = min(c0, c1, c2)
+        min_c = min(c0, c1)
         idx0 = [i for i, j in enumerate(train_labels) if j[0] == 1]
         idx1 = [i for i, j in enumerate(train_labels) if j[1] == 1]
-        idx2 = [i for i, j in enumerate(train_labels) if j[2] == 1]
-        new_indices = idx0[0:min_c] + idx1[0:min_c] + idx2[0:min_c]
+        #idx2 = [i for i, j in enumerate(train_labels) if j[2] == 1]
+        new_indices = idx0[0:min_c] + idx1[0:min_c] # + idx2[0:min_c]
         print (len(new_indices))
         print (train_data.shape)
         train_data = train_data[new_indices,:,:,:]
@@ -256,15 +257,15 @@ def main(argv=None):  # pylint: disable=unused-argument
 
     c0 = 0
     c1 = 0
-    c2 = 0
+    #c2 = 0
     for i in range(len(train_labels)):
         if train_labels[i][0] == 1:
             c0 = c0 + 1
         if train_labels[i][1] == 1:
             c1 = c1 + 1
-        if train_labels[i][2] == 1:
-            c2 = c2 + 1
-    print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1) + ' c2 = ' + str(c2))
+        #if train_labels[i][2] == 1:
+            #c2 = c2 + 1
+    print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1) )#+ ' c2 = ' + str(c2))
 
 
     # This is where training samples and labels are fed to the graph.
@@ -314,7 +315,7 @@ def main(argv=None):  # pylint: disable=unused-argument
         V = tf.transpose(V, (2, 0, 1))
         V = tf.reshape(V, (-1, img_w, img_h, 1))
         return V
-    
+
     # Make an image summary for 3d tensor image with index idx
     def get_image_summary_3d(img):
         V = tf.slice(img, (0, 0, 0), (1, -1, -1))
@@ -325,7 +326,7 @@ def main(argv=None):  # pylint: disable=unused-argument
         V = tf.reshape(V, (-1, img_w, img_h, 1))
         return V
 
-    # Get prediction for given input image 
+    # Get prediction for given input image
     def get_prediction(img):
         data = numpy.asarray(img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE))
         data_node = tf.constant(data)
@@ -341,7 +342,7 @@ def main(argv=None):  # pylint: disable=unused-argument
         cimg = concatenate_images(img, img_prediction)
 
         return cimg
-        
+
     # Get prediction overlaid on the original image for given input file
     def get_prediction_with_overlay(image_filename, pimg):
         img = mpimg.imread(image_filename)
@@ -379,11 +380,11 @@ def main(argv=None):  # pylint: disable=unused-argument
                               padding='SAME')
 
         # Uncomment these lines to check the size of each layer
-        # print 'data ' + str(data.get_shape())
-        # print 'conv ' + str(conv.get_shape())
-        # print 'relu ' + str(relu.get_shape())
-        # print 'pool ' + str(pool.get_shape())
-        # print 'pool2 ' + str(pool2.get_shape())
+        print ('data ' + str(data.get_shape()))
+        print ('conv ' + str(conv.get_shape()))
+        print ('relu ' + str(relu.get_shape()))
+        print ('pool ' + str(pool.get_shape()))
+        print ('pool2 ' + str(pool2.get_shape()))
 
 
         # Reshape the feature map cuboid into a 2D matrix to feed it to the
@@ -431,7 +432,7 @@ def main(argv=None):  # pylint: disable=unused-argument
         norm_grad_i = tf.global_norm([all_grads_node[i]])
         all_grad_norms_node.append(norm_grad_i)
         tf.summary.scalar(all_params_names[i], norm_grad_i)
-    
+
     # L2 regularization for the fully connected parameters.
     regularizers = (tf.nn.l2_loss(fc1_weights) + tf.nn.l2_loss(fc1_biases) +
                     tf.nn.l2_loss(fc2_weights) + tf.nn.l2_loss(fc2_biases))
@@ -449,7 +450,7 @@ def main(argv=None):  # pylint: disable=unused-argument
         0.95,                # Decay rate.
         staircase=True)
     tf.summary.scalar('learning_rate', learning_rate)
-    
+
     # Use simple momentum for the optimization.
     optimizer = tf.train.MomentumOptimizer(learning_rate,
                                            0.0).minimize(loss,
@@ -537,44 +538,44 @@ def main(argv=None):  # pylint: disable=unused-argument
         prediction_dir = "predictions/"
         if not os.path.isdir(prediction_dir):
             os.mkdir(prediction_dir)
-            
+
         for i in range(1, TEST_SIZE+1):
             image_filename = "test_set_images/test_" + str(i) + "/test_" + str(i) + ".png"
-            
+
             def prediction_to_mask(img):
-                house = img[:, :, 2]
+                #house = img[:, :, 2]
                 road = img[:, :, 1]
-                diff = road - house
+                diff = road # - house
                 diff[diff < 0] = 0
                 return diff
-                
-                
+
+
             def to_rgb(img):
                 if len(img.shape) == 3:
                     return img_float_to_uint8(img)
                 g3c = numpy.zeros((img.shape[0], img.shape[1], 3), dtype=numpy.uint8)
-                g8 = img_float_to_uint8(img)          
+                g8 = img_float_to_uint8(img)
                 g3c[:,:,0] = g8
                 g3c[:,:,1] = g8
                 g3c[:,:,2] = g8
                 return g3c
-            
+
             pimg = get_prediction(mpimg.imread(image_filename))
             pred = prediction_to_mask(pimg)
-            
+
             post = post_process.process(pred)
             mask = numpy.where(post > 0.5, 1.0, 0.0)
-            
+
             oimg = get_prediction_with_overlay(image_filename, mask)
-            
+
             Image.fromarray(to_rgb(pred)).save(prediction_dir + str(i) + "_prediction.png")
             Image.fromarray(to_rgb(post)).save(prediction_dir + str(i) + "_post.png")
             Image.fromarray(to_rgb(mask)).save(prediction_dir + str(i) + "_final_mask.png")
             Image.fromarray(to_rgb(pimg)).save(prediction_dir + str(i) + "_raw.png")
-            oimg.save(prediction_dir + str(i) + "_overlay.png")  
-            
+            oimg.save(prediction_dir + str(i) + "_overlay.png")
+
         print("DONE")
-        
+
 if __name__ == '__main__':
     if "-r" in sys.argv or "--retrain" in sys.argv:
         RESTORE_MODEL = False
