@@ -48,18 +48,23 @@ def keep_connected(img):
     mat = np.where(img > 0.5, 1, 0)
     labels, count = morphology.label(mat, connectivity=2, return_num=True)
     
-    best = None
-    best_score = 0
-    for i in range(count):
-        score = (labels == (i + 1)).sum()
-        if score > best_score:
-            best_score = score
-            best = i
+    
+    scores = [(labels == (i + 1)).sum() for i in range(count)]
+    
+    best_score = max(scores)
+    keep_score = best_score * 0.025
+    keep = [i for i in range(count) if scores[i] > keep_score]
+    
+    out = np.zeros(img.shape)
+    
+    for k in keep:
+        out[labels == (k + 1)] = 1
             
-    return np.where(labels == (best + 1), 1.0, 0.0)
+    return out
 
     
 def process(a, patch_size):
+
     # extract image orientation
     c = morphology.skeletonize(a > 0.5)#feature.canny(a, sigma = 5.0)
     h = transform.hough_line(c)[0]
@@ -81,7 +86,7 @@ def process(a, patch_size):
     kernel /= size
     kernel[mid, mid] = 1  
     
-    # downscale to 1 pixel per patch
+    # downscale to 1 pixel per patch"""
     d = downscale(a, patch_size)
     
     d = fill(d)
@@ -96,7 +101,11 @@ def process(a, patch_size):
 
     b /= kernel.sum() * (len(angles) + 1)
     
-    #b = ndimage.convolve(morphology.skeletonize(b > 0.5), np.ones((3, 3)))
-   
+    #b = ndimage.convolve(morphology.skeletonize(b > 0.5), np.ones((4, 4)))
+    
+    # remove small island
+    #b = keep_connected(b)
+    
+    
     # upscale back to size
     return upscale(b, patch_size)
