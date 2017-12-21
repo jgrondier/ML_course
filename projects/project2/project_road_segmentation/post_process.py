@@ -36,6 +36,13 @@ def peak_angles(data):
     angles = [i for i, v in enumerate(maxes) if v in bests]
     return best([a % 90 for a in angles if 10 < a % 90 < 80])
     
+
+def fill(a):
+    kernel = np.array([[0.0 , 0.25, 0.0 ],
+                       [0.25, 0.0 , 0.25],
+                       [0.0 , 0.25, 0.0 ]])
+    return ndimage.convolve(a, kernel)
+
     
 def process(a, patch_size):
     # extract image orientation
@@ -47,10 +54,10 @@ def process(a, patch_size):
     angles = peak_angles(h)
 
     # main kernel size
-    size = 101
+    size = 7
     mid = int(size // 2.0)
     
-    # create kernel
+    # create + kernel
     kernel = np.zeros((size, size))
     kernel[mid, :] = kernel[:, mid] = 1
     kernel /= size
@@ -66,8 +73,9 @@ def process(a, patch_size):
         print("using rotated kernel:", str(a) + "°")
         rot = ndimage.rotate(kernel, -a)
         b = b + ndimage.convolve(d, rot)
+        
 
-    b = normalized(b)
+    b /= kernel.sum() * (len(angles) + 1)
    
     # upscale back to size
     return upscale(b, patch_size)
