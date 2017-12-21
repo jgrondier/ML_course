@@ -46,9 +46,12 @@ We train on 500 images instead of 100: the extra 400 were transposed, flipped ea
 
 
 \section{Results post-processing}
-Fill holes.
+After obtaining the raw prediction from the convolutional neural network, we do a post-processing step in order to remove most of the noise.
 
-use canny+Hough to find major axis, rotate a cross-shaped kernel to align it, then convolve
+The post processing consists of a series of convolutions, using a cross shaped kernel. This shape has be chosen to match the many right angle intersections present in our dataset.
+
+In some cases the roads are not aligned to the image axes, to handle those we extract the most significant straight lines from the image using Hough transform and rotate our kernel to match their orientation.
+
 
 \section{Discussion}
 
