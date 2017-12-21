@@ -24,8 +24,8 @@ BALANCE_CLASSES = True
 NUM_CHANNELS = 3 # RGB images
 PIXEL_DEPTH = 255
 NUM_LABELS = 2
-TRAINING_SIZE = 20
-TEST_SIZE = 5
+TRAINING_SIZE = 500
+TEST_SIZE = 50
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16 # 64
@@ -381,11 +381,11 @@ def main(argv=None):  # pylint: disable=unused-argument
                               padding='SAME')
 
         # Uncomment these lines to check the size of each layer
-        print ('data ' + str(data.get_shape()))
-        print ('conv ' + str(conv.get_shape()))
-        print ('relu ' + str(relu.get_shape()))
-        print ('pool ' + str(pool.get_shape()))
-        print ('pool2 ' + str(pool2.get_shape()))
+        # print ('data ' + str(data.get_shape()))
+        # print ('conv ' + str(conv.get_shape()))
+        # print ('relu ' + str(relu.get_shape()))
+        # print ('pool ' + str(pool.get_shape()))
+        # print ('pool2 ' + str(pool2.get_shape()))
 
 
         # Reshape the feature map cuboid into a 2D matrix to feed it to the
