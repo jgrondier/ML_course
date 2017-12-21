@@ -23,7 +23,7 @@
 \begin{abstract}
 In this project, we were given a dataset consisting of aerial photographs of suburban areas. Our task was to apply different machine learning methods to this dataset to train a model that would predict where roads were present in these photographs.
 
-Using a Convolutional Neural Network and image processing algorithms, we achieved 82.9 F\textsubscript{1}-score.
+\todo{summarize results}
 \end{abstract}
 
 
@@ -65,17 +65,18 @@ After obtaining the raw prediction from the convolutional neural network, we do 
 
 The post processing consists of a series of two convolutions.
 
-The first one has been designed to fill single patches holes in the prediction.
-The final one uses a cross shaped kernel. This shape has be chosen to match the many right angle intersections present in our dataset.
+The first one has been designed to fill single patch holes in the prediction.
+The final one uses a cross shaped kernel \ref{fig:conv}. This shape has been chosen to match the many right angle intersections present in our dataset.
 In some cases the roads are not aligned to the image axes, to handle those we extract the most significant straight lines from the image using Hough transform and rotate our kernel to match their orientation.
 
 These convolutions reduce the noise significantly. We tried to improve the result further by discarding small unconnected patches from the final mask. While this reduced the false positive amount by removing  a few roofs, it did also discard small roads leading to a slightly worst prediction overall.
 
-The result composed of 4x4 blocks is converted to the required 16x16 blocks by \texttt{mask\_to\_submission.py} which simply takes all blocks which mean value is greater than 0.5.
+Our result composed of 4x4 blocks is converted to the required 16x16 blocks by \texttt{mask\_to\_submission.py} which simply takes all 16x16 blocks which mean value is greater than 0.5.
 
 \begin{figure}[h]
 \includegraphics[width=0.5\textwidth]{conv.png}
 \caption{Prediction convolution}
+\label{fig:conv}
 \end{figure}
 
 \begin{figure}[h]
@@ -89,6 +90,6 @@ We remark that our model has a hard time differentiating flat, grey roofs from t
 Our model also misses roads when they are covered by a large tree --- although technically one can't be sure there is a road under it, we just infer its probable presence from the presence of two road parts on either side. Furthermore, when a road is very thin and very close to the buildings surrounding it (e.g. European cities' historical centers) it is often not detected.
 
 \section{Summary}
-While we had high hopes for using a custom CNN architecture, we are disappointed that we weren't able to build a functional one. However, using the basic, provided CNN, we achieved results that we deem satisfactory.
+While we had high hopes for using a custom CNN architecture, we are disappointed that we weren't able to build a functional one. However, using the basic, provided CNN, we achieved results that we would deem satisfactory.
 
 \end{document}
