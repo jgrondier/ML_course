@@ -71,7 +71,7 @@ In some cases the roads are not aligned to the image axes, to handle those we ex
 
 These convolutions reduce the noise significantly. We tried to improve the result further by discarding small unconnected patches from the final mask. While this reduced the false positive amount by removing  a few roofs, it did also discard small roads leading to a slightly worst prediction overall.
 
-Our result composed of 4x4 blocks is converted to the required 16x16 blocks by \texttt{mask\_to\_submission.py} which simply takes all 16x16 blocks which mean value is greater than 0.5.
+Our result composed of 4x4 blocks is converted to the required 16x16 blocks by \texttt{mask\_to\_submission.py} which simply takes all 16x16 blocks with a mean value greater than 0.5 (i.e. where more than half of its sub-patches are labeled `road').
 
 \begin{figure}[h]
 \includegraphics[width=0.5\textwidth]{conv.png}
